@@ -250,6 +250,10 @@ double generate_mu_costheta(TRandom *r){
   return costheta;  
 }
 
+double generate_mu_position(TRandom *r){
+  return 0;
+}
+
 //distribution of electron angle with respecto to the
 //muon spin direction
 double generate_ele_costheta(TRandom *r){
