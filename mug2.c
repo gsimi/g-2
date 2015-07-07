@@ -250,8 +250,11 @@ double generate_mu_costheta(TRandom *r){
   return costheta;  
 }
 
-double generate_mu_position(TRandom *r){
-  return 0;
+//distribution of the muon position
+double generate_mu_position(TRandom *r, double W1){
+  double mu_pos = r->Uniform(0,W1);
+  //cout<<"muon position : "<<mu_pos<<" ";
+  return mu_pos;
 }
 
 //distribution of electron angle with respecto to the
@@ -336,6 +339,87 @@ void config(const char* absorber, double &thickness, double& dedx, double &rho, 
   }
 }
 
+/*
+Function that checks if a muon is likely to be detected by scintillator 2, based on the geometry of the experiment and on the position and angle of the muon
+return true if the muon is within the limits of detection
+*/
+bool check_muon1(double mu_pos, double theta, double W2){
+  //parameters that should be initialized with the experiment geometry values
+  double W1 = 50;
+  double d1 = 5;
+  double d2 = 5;
+  double d1_2 = 30;
+  //parameters that will be defined in the function
+  double theta_min, theta_max;
+  bool check = false;
+  //case 1 : muon at the left of scintillator 2
+  if (mu_pos < ((W1-W2)/2)){
+    theta_min = atan(((W1-W2)/2 - mu_pos) / (d1+d2+d1_2));
+    theta_max = atan(((W1+W2)/2 - mu_pos) / (d1+d1_2));
+  }
+  //case 2 : muon at the right of scintillator 2
+  if (mu_pos > ((W1+W2)/2)){
+   theta_min = atan(((W1-W2)/2 - mu_pos) / (d1+d1_2));
+   theta_max = atan(((W1+W2)/2 - mu_pos) / (d1+d2+d1_2));
+  }
+  //case 3 : muon above scintillator 2
+  if ((mu_pos >= (W1-W2)/2) && (mu_pos <= (W1+W2)/2)){
+  theta_min = atan(((W1-W2)/2 - mu_pos) / (d1+d1_2));
+  theta_max = atan(((W1+W2)/2 - mu_pos) / (d1+d1_2));  
+  }
+  // check if theta is within the limits of detection
+  if ((theta>theta_min) && (theta<theta_max)){
+    check = true;
+  }
+  //cout<<"the result of the test is : "<<check<<" ";
+  return check;
+}
+
+/*
+Function that checks if the muon, given its position and angle, will hit the absorber
+ */
+bool check_muon2(double mu_pos, double theta){
+ //parameters that should be initialized with the experiment geometry values
+  double W1 = 50;
+  double d1 = 5;
+  double d2 = 5;
+  double d1_2 = 30;
+  double d2_a = 10;
+  double d = d1+d2+d1_2+d2_a;
+
+  double theta_min = atan(-mu_pos/d);
+  double theta_max = atan((W1-mu_pos)/d);
+  bool check = false;
+
+  if ((theta>theta_min) && (theta<theta_max)){
+    check = true;
+  }
+  //cout<<"the result of the test is : "<<check<<" ";
+  return check;
+}
+
+/*
+Function that checks if the muon is likely to be detected by scintillator 3 
+ */
+bool check_muon3(double mu_pos, double theta, double d2_3){
+ //parameters that should be initialized with the experiment geometry values
+  double W1 = 50;
+  double d1 = 5;
+  double d2 = 5;
+  double d1_2 = 30;
+  double D = d1+d1_2+d2+d2_3;
+  bool check = false;
+
+  double theta_min = atan(-mu_pos/D);
+  double theta_max = atan((W1-mu_pos)/D);
+
+  if ((theta>theta_min) && (theta<theta_max)){
+    check = true;
+  }
+  //cout<<"the result of the test is : "<<check<<" ";
+  return check;
+}
+
 
 /* 
    -nmu is the numbe rof muons incident on the absorber
@@ -378,6 +462,76 @@ double generate_nsig(int nmu, const char* absorber, double thickness){
     if (eleE<deltaE) continue;
     h->Fill(eleE);
   }
+  h->Draw();
+  cout<<h->GetEntries()<<endl;
+  double nele=h->GetEntries();
+  printf("fraction of good events %2.2f/%d = %2.2f%% \n",nele,nmu,nele/nmu*100);
+  return nele;
+}
+
+//2nd version of generate_nsig
+double generate_nsig2(int nmu, const char* absorber, double thickness, double W2, double d2_3){
+  double dedx, rho, tauminus, dummythick; fittype ifit;
+  config(absorber,dummythick,dedx,rho,tauminus,ifit);
+  //reference_pstop is that of 2.5 cm of copper (from Amsler)
+  float reference_pstop=0.01;
+  float pstop=reference_pstop*thickness*dedx*rho/(2.5*1.4*8.9); 
+  //parameters that should be initialized with the experiment geometry values
+  double W1 = 50;
+  
+  TRandom r;
+  TH1F* h = new TH1F("e_ele","ele energy",100,0,52.8);
+  double n_bkg = 0;
+  double n_mu_abs = 0;
+  for (int i=0;i<nmu;i++){
+    //muon position and angle at the top of scintillator 1, between 0 and W1
+    double mu_pos = generate_mu_position(&r,W1);
+    double mu_theta = acos(generate_mu_costheta(&r));
+    if (check_muon1(mu_pos,mu_theta,W2)){
+      if (!check_muon2(mu_pos,mu_theta)){
+	n_bkg++;
+      }
+      else {
+	if (!check_muon3(mu_pos,mu_theta,d2_3)){
+	  n_bkg++;
+	}
+	else {
+	  n_mu_abs++;
+	  //TRandom p;
+	  double a = r.Uniform(0,1);
+	  if (a<=pstop){
+	    cout<<"muon is stopped"<<endl;
+	    //generate the direction of the muon spin
+	    float mu_costheta=generate_mu_costheta(&r);
+	    TVector3 vmu(0,0,1); 
+	    vmu.RotateX(acos(mu_costheta));
+	    //generate direction of the elctron momentum
+	    float ele_costheta=generate_ele_costheta(&r);
+	    float ele_phi=r.Uniform(-3.1416,3.1416);
+	    TVector3 vele(vmu);
+	    vele.RotateX(acos(ele_costheta));
+	    vele.Rotate(ele_phi,vmu);
+	    /* discard downgoing electrons and electrons stopped in the absorber */
+	    if (vele.CosTheta()<0) {
+	      n_bkg++;
+	      continue;
+	    }
+	    //generate the position where the muon has stopped
+	    float y=r.Uniform(0,thickness);
+	    //length travelled by the electron to exit the slab
+	    double l=(thickness-y)/vele.CosTheta();
+	    //energy lost by electron
+	    double deltaE=l*rho*dedx;
+	    double eleE=ele_energy(&r);
+	    if (eleE<deltaE) continue;
+	    h->Fill(eleE);
+	  }
+	}
+      }
+    }
+  }
+  cout<<"muon hitting the absorber ="<<n_mu_abs<<" ";
+  cout<<"muon bkg ="<<n_bkg<<" ";
   h->Draw();
   cout<<h->GetEntries()<<endl;
   double nele=h->GetEntries();
