@@ -350,7 +350,8 @@ bool check_muon1(double mu_pos, double theta, double W2){
   double d2 = 5;
   double d1_2 = 30;
   //parameters that will be defined in the function
-  double theta_min, theta_max;
+  double theta_min = 0; 
+  double theta_max = 0;
   bool check = false;
   //case 1 : muon at the left of scintillator 2
   if (mu_pos < ((W1-W2)/2)){
@@ -474,7 +475,7 @@ double generate_nsig2(int nmu, const char* absorber, double thickness, double W2
   double dedx, rho, tauminus, dummythick; fittype ifit;
   config(absorber,dummythick,dedx,rho,tauminus,ifit);
   //reference_pstop is that of 2.5 cm of copper (from Amsler)
-  float reference_pstop=0.01;
+  float reference_pstop=1e-2;
   float pstop=reference_pstop*thickness*dedx*rho/(2.5*1.4*8.9); 
   //parameters that should be initialized with the experiment geometry values
   double W1 = 50;
@@ -486,7 +487,9 @@ double generate_nsig2(int nmu, const char* absorber, double thickness, double W2
   for (int i=0;i<nmu;i++){
     //muon position and angle at the top of scintillator 1, between 0 and W1
     double mu_pos = generate_mu_position(&r,W1);
-    double mu_theta = acos(generate_mu_costheta(&r));
+    int b = floor(r.Uniform(0,10));
+    double mu_theta = pow(-1,b)*acos(generate_mu_costheta(&r));  //theta can be either positive or negative
+    //cout<<"theta ="<<mu_theta<<" ";
     if (check_muon1(mu_pos,mu_theta,W2)){
       if (!check_muon2(mu_pos,mu_theta)){
 	n_bkg++;
@@ -497,7 +500,6 @@ double generate_nsig2(int nmu, const char* absorber, double thickness, double W2
 	}
 	else {
 	  n_mu_abs++;
-	  //TRandom p;
 	  double a = r.Uniform(0,1);
 	  if (a<=pstop){
 	    cout<<"muon is stopped"<<endl;
