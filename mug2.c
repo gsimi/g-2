@@ -2,6 +2,7 @@
 #include "TH1F.h"
 #include "TRandom.h"
 #include "TVector3.h"
+#include "TVector2.h"
 
 /* TOY SIMULATION OF G-2 MEASUREMENT EXPERIMENT
 setup:
@@ -299,6 +300,68 @@ TH1F* h_ele_e(int nentries){
 /*   Absorber(const char* absorber, double &thickness, double& dedx, double &rho, double &tauminus) */
 /* }; */
 
+class Config{
+ public:
+  Config(char *absorber,int geometry);
+  ~Config(){};
+  double dedx;
+  double rho;
+  double tauminus;//mus
+  double thickness;//cm
+  fittype ifit;
+  double W1;
+  double d1;
+  double d2;
+  double d1_2;
+  double d2_a;
+ private:
+};
+Config::Config(char *absorber, int geometry){
+
+  /* thickness is the default thickness of the absorber. It is
+     defined such that the energy loss in different materials is the same.
+     The absolute normalization is given by the thickness of the copper absorber
+     set so that the energy loss is 31MeV */
+
+  if (strcmp(absorber, "Cu")==0){
+    // copper
+    dedx=1.4;
+    rho=8.9;
+    tauminus=0.16;//mus
+    thickness=2.5;//cm
+    ifit=single_exp;
+  }
+  if (strcmp(absorber,"Al")==0){
+    // aluminium
+    dedx=1.6;
+    rho=2.7;
+    tauminus=0.88;//mus
+    thickness=2.5*8.9*1.4/rho/dedx;
+    ifit=double_exp;
+  }
+  if (strcmp(absorber,"Sci")==0){
+    dedx=1.03;
+    rho=2.0;
+    tauminus=2.03;//mus
+    thickness=2.5*8.9*1.4/rho/dedx;
+    ifit=double_exp;
+  }
+  if (strcmp(absorber,"Pb")==0){
+    dedx=1.12;
+    rho=11.35;
+    tauminus=75./1000.;//mus
+    thickness=2.5*8.9*1.4/rho/dedx;
+    ifit=single_exp;
+  }
+  if (geometry == 1){
+    W1 = 55;
+    d1 = 1;
+    d2 = 1;
+    d1_2 = 8;
+    d2_a = 0.2;
+  }
+}
+
 void config(const char* absorber, double &thickness, double& dedx, double &rho, double &tauminus, 
 	    fittype& ifit){
 
@@ -344,29 +407,24 @@ Function that checks if a muon is likely to be detected by scintillator 2, based
 return true if the muon is within the limits of detection
 */
 bool check_muon1(double mu_pos, double theta, double W2){
-  //parameters that should be initialized with the experiment geometry values
-  double W1 = 50;
-  double d1 = 5;
-  double d2 = 5;
-  double d1_2 = 30;
-  //parameters that will be defined in the function
+  Config  c("Cu",1);
   double theta_min = 0; 
   double theta_max = 0;
   bool check = false;
   //case 1 : muon at the left of scintillator 2
-  if (mu_pos < ((W1-W2)/2)){
-    theta_min = atan(((W1-W2)/2 - mu_pos) / (d1+d2+d1_2));
-    theta_max = atan(((W1+W2)/2 - mu_pos) / (d1+d1_2));
+  if (mu_pos < ((c.W1-W2)/2)){
+    theta_min = atan(((c.W1-W2)/2 - mu_pos) / (c.d1+c.d2+c.d1_2));
+    theta_max = atan(((c.W1+W2)/2 - mu_pos) / (c.d1+c.d1_2));
   }
   //case 2 : muon at the right of scintillator 2
-  if (mu_pos > ((W1+W2)/2)){
-   theta_min = atan(((W1-W2)/2 - mu_pos) / (d1+d1_2));
-   theta_max = atan(((W1+W2)/2 - mu_pos) / (d1+d2+d1_2));
+  if (mu_pos > ((c.W1+W2)/2)){
+   theta_min = atan(((c.W1-W2)/2 - mu_pos) / (c.d1+c.d1_2));
+   theta_max = atan(((c.W1+W2)/2 - mu_pos) / (c.d1+c.d2+c.d1_2));
   }
   //case 3 : muon above scintillator 2
-  if ((mu_pos >= (W1-W2)/2) && (mu_pos <= (W1+W2)/2)){
-  theta_min = atan(((W1-W2)/2 - mu_pos) / (d1+d1_2));
-  theta_max = atan(((W1+W2)/2 - mu_pos) / (d1+d1_2));  
+  if ((mu_pos >= (c.W1-W2)/2) && (mu_pos <= (c.W1+W2)/2)){
+  theta_min = atan(((c.W1-W2)/2 - mu_pos) / (c.d1+c.d1_2));
+  theta_max = atan(((c.W1+W2)/2 - mu_pos) / (c.d1+c.d1_2));  
   }
   // check if theta is within the limits of detection
   if ((theta>theta_min) && (theta<theta_max)){
@@ -381,15 +439,10 @@ Function that checks if the muon, given its position and angle, will hit the abs
  */
 bool check_muon2(double mu_pos, double theta){
  //parameters that should be initialized with the experiment geometry values
-  double W1 = 50;
-  double d1 = 5;
-  double d2 = 5;
-  double d1_2 = 30;
-  double d2_a = 10;
-  double d = d1+d2+d1_2+d2_a;
-
+  Config c("Cu",1);
+  double d = c.d1+c.d2+c.d1_2+c.d2_a;
   double theta_min = atan(-mu_pos/d);
-  double theta_max = atan((W1-mu_pos)/d);
+  double theta_max = atan((c.W1-mu_pos)/d);
   bool check = false;
 
   if ((theta>theta_min) && (theta<theta_max)){
@@ -403,16 +456,11 @@ bool check_muon2(double mu_pos, double theta){
 Function that checks if the muon is likely to be detected by scintillator 3 
  */
 bool check_muon3(double mu_pos, double theta, double d2_3){
- //parameters that should be initialized with the experiment geometry values
-  double W1 = 50;
-  double d1 = 5;
-  double d2 = 5;
-  double d1_2 = 30;
-  double D = d1+d1_2+d2+d2_3;
+  Config c("Cu",1);
+  double D = c.d1+c.d1_2+c.d2+d2_3;
   bool check = false;
-
   double theta_min = atan(-mu_pos/D);
-  double theta_max = atan((W1-mu_pos)/D);
+  double theta_max = atan((c.W1-mu_pos)/D);
 
   if ((theta>theta_min) && (theta<theta_max)){
     check = true;
@@ -471,14 +519,17 @@ double generate_nsig(int nmu, const char* absorber, double thickness){
 }
 
 //2nd version of generate_nsig
-double generate_nsig2(int nmu, const char* absorber, double thickness, double W2, double d2_3){
-  double dedx, rho, tauminus, dummythick; fittype ifit;
-  config(absorber,dummythick,dedx,rho,tauminus,ifit);
+double generate_nsig2(int nmu, char* absorber, double thickness, double W2, double d2_3){
+  //double dedx, rho, tauminus, dummythick; fittype ifit;
+  Config c(absorber,1);
+  //config(absorber,dummythick,dedx,rho,tauminus,ifit);
   //reference_pstop is that of 2.5 cm of copper (from Amsler)
-  float reference_pstop=1e-2;
-  float pstop=reference_pstop*thickness*dedx*rho/(2.5*1.4*8.9); 
+  /* float reference_pstop=1e-2; */
+  /* float pstop=reference_pstop*thickness*dedx*rho/(2.5*1.4*8.9);  */
+  float p_absorb_per_MeV=0.01/10; // 1%/10MeV 
+  float stop=c.dedx*c.rho*p_absorb_per_MeV;
   //parameters that should be initialized with the experiment geometry values
-  double W1 = 50;
+  //double W1 = 50;
   
   TRandom r;
   TH1F* h = new TH1F("e_ele","ele energy",100,0,52.8);
@@ -486,7 +537,7 @@ double generate_nsig2(int nmu, const char* absorber, double thickness, double W2
   double n_mu_abs = 0;
   for (int i=0;i<nmu;i++){
     //muon position and angle at the top of scintillator 1, between 0 and W1
-    double mu_pos = generate_mu_position(&r,W1);
+    double mu_pos = generate_mu_position(&r,c.W1);
     int b = floor(r.Uniform(0,10));
     double mu_theta = pow(-1,b)*acos(generate_mu_costheta(&r));  //theta can be either positive or negative
     //cout<<"theta ="<<mu_theta<<" ";
@@ -501,8 +552,8 @@ double generate_nsig2(int nmu, const char* absorber, double thickness, double W2
 	else {
 	  n_mu_abs++;
 	  double a = r.Uniform(0,1);
-	  if (a<=pstop){
-	    cout<<"muon is stopped"<<endl;
+	  if (a<=stop){
+	    //cout<<"muon is stopped"<<endl;
 	    //generate the direction of the muon spin
 	    float mu_costheta=generate_mu_costheta(&r);
 	    TVector3 vmu(0,0,1); 
@@ -523,7 +574,7 @@ double generate_nsig2(int nmu, const char* absorber, double thickness, double W2
 	    //length travelled by the electron to exit the slab
 	    double l=(thickness-y)/vele.CosTheta();
 	    //energy lost by electron
-	    double deltaE=l*rho*dedx;
+	    double deltaE=l*c.rho*c.dedx;
 	    double eleE=ele_energy(&r);
 	    if (eleE<deltaE) continue;
 	    h->Fill(eleE);
@@ -541,11 +592,90 @@ double generate_nsig2(int nmu, const char* absorber, double thickness, double W2
   return nele;
 }
 
-double toy(double nweeks, double B, double nbkg, double alpha, char *absorber, float thickness){
-  double dedx, rho, tauminus, thickness_nom;
-  fittype ifit;
-  config(absorber,thickness_nom, dedx,rho,tauminus,ifit);
+//3rd version of generate_nsig
+TVector2 generate_nsig3(int nmu, char* absorber, double thickness, double W2, double d2_3){
+  TVector2 res(0,0);
+  //double dedx, rho, tauminus, dummythick; fittype ifit;
+  Config c(absorber,1);
+  //config(absorber,dummythick,dedx,rho,tauminus,ifit);
+  //reference_pstop is that of 2.5 cm of copper (from Amsler)
+  /* float reference_pstop=1e-2; */
+  /* float pstop=reference_pstop*thickness*dedx*rho/(2.5*1.4*8.9);  */
+  float p_absorb_per_MeV=0.01/10; // 1%/10MeV 
+  float stop=c.dedx*c.rho*p_absorb_per_MeV;
+  //parameters that should be initialized with the experiment geometry values
+  //double W1 = 50;
+  
+  TRandom r;
+  TH1F* h = new TH1F("e_ele","ele energy",100,0,52.8);
+  double n_bkg = 0;
+  double n_mu_abs = 0;
+  for (int i=0;i<nmu;i++){
+    //muon position and angle at the top of scintillator 1, between 0 and W1
+    double mu_pos = generate_mu_position(&r,c.W1);
+    int b = floor(r.Uniform(0,10));
+    double mu_theta = pow(-1,b)*acos(generate_mu_costheta(&r));  //theta can be either positive or negative
+    //cout<<"theta ="<<mu_theta<<" ";
+    if (check_muon1(mu_pos,mu_theta,W2)){
+      if (!check_muon2(mu_pos,mu_theta)){
+	n_bkg++;
+      }
+      else {
+	if (!check_muon3(mu_pos,mu_theta,d2_3)){
+	  n_bkg++;
+	}
+	else {
+	  n_mu_abs++;
+	  double a = r.Uniform(0,1);
+	  if (a<=stop){
+	    //cout<<"muon is stopped"<<endl;
+	    //generate the direction of the muon spin
+	    float mu_costheta=generate_mu_costheta(&r);
+	    TVector3 vmu(0,0,1); 
+	    vmu.RotateX(acos(mu_costheta));
+	    //generate direction of the elctron momentum
+	    float ele_costheta=generate_ele_costheta(&r);
+	    float ele_phi=r.Uniform(-3.1416,3.1416);
+	    TVector3 vele(vmu);
+	    vele.RotateX(acos(ele_costheta));
+	    vele.Rotate(ele_phi,vmu);
+	    /* discard downgoing electrons and electrons stopped in the absorber */
+	    if (vele.CosTheta()<0) {
+	      n_bkg++;
+	      continue;
+	    }
+	    //generate the position where the muon has stopped
+	    float y=r.Uniform(0,thickness);
+	    //length travelled by the electron to exit the slab
+	    double l=(thickness-y)/vele.CosTheta();
+	    //energy lost by electron
+	    double deltaE=l*c.rho*c.dedx;
+	    double eleE=ele_energy(&r);
+	    if (eleE<deltaE) continue;
+	    h->Fill(eleE);
+	  }
+	}
+      }
+    }
+  }
+  //cout<<"muon hitting the absorber ="<<n_mu_abs<<" ";
+  //cout<<"muon bkg ="<<n_bkg<<" ";
+  h->Draw();
+  cout<<h->GetEntries()<<endl;
+  double nele=h->GetEntries();
+  printf("fraction of good events %2.2f/%d = %2.2f%% \n",nele,nmu,nele/nmu*100);
+  res.Set(nele,n_bkg);
+  cout<<"muons detected : "<<nele<<" ";
+  cout<<"background : "<<n_bkg<<" "; 
+  return res;
+ 
+}
 
+double toy(double nweeks, double B, double nbkg, double alpha, char *absorber, float thickness){
+  // double dedx, rho, tauminus, thickness_nom;
+  //fittype ifit;
+  //config(absorber,thickness_nom, dedx,rho,tauminus,ifit);
+  Config c(absorber,1);
   float ndays=nweeks*7;
   float time=ndays*24*3600;//in seconds
   float nmu=time*7;//muons in the acceptance. 
@@ -553,15 +683,16 @@ double toy(double nweeks, double B, double nbkg, double alpha, char *absorber, f
      for muons to an area of 60cm x 60cm area */
   float nele= generate_nsig(nmu,absorber,thickness) ;//nominal number of signal events;
   
-  double gm2err=toyfit(nele,B,nbkg,alpha,tauminus,ifit);
+  double gm2err=toyfit(nele,B,nbkg,alpha,c.tauminus,c.ifit);
   cout<<"nele ="<<nele<<endl;
   cout<<"gm2err = "<<gm2err<<endl;  
  return gm2err;  
 }
 
-void tables(const char* absorber="Cu"){
-  double dedx, rho, tauminus, thickness_nom; fittype ifit;
-  config(absorber,thickness_nom, dedx,rho,tauminus,ifit);
+void tables(char* absorber="Cu", double W2=55, double d2_3=10){
+  //double dedx, rho, tauminus, thickness_nom; fittype ifit;
+  //config(absorber,thickness_nom, dedx,rho,tauminus,ifit);
+  Config c(absorber,1);
   float tauplus=2.2;
   /* 
      first: find the number of signal events expected with this configuration 
@@ -572,7 +703,7 @@ void tables(const char* absorber="Cu"){
   float nmu=time*7;//muons in the acceptance. 
   /* 7 Hz rate is an estimate from Amsler assuming rescaling their rate 
      for muons to an area of 60cm x 60cm area */
-  float ns_nom= generate_nsig(nmu,absorber,thickness_nom) ;//nominal number of signal events;
+  float ns_nom= generate_nsig2(nmu,absorber,c.thickness,W2,d2_3) ;//nominal number of signal events;
   cout<<" nominal number of signal events in "<<ndays<<" days = "<<ns_nom<<endl;
   float nb_nom=1e3*nweeks; // nominal number of background events (guess)
   
@@ -587,36 +718,36 @@ void tables(const char* absorber="Cu"){
   double B[15]={20,25,30,35,40,45,50,B_nom,60,65,70,75,80,100,120};
   double gm2err_B[15];
   for (int i=0;i<15;i++)
-    gm2err_B[i]=toyfit(ns_nom,B[i],nb_nom,alpha_nom,tauminus,ifit);
+    gm2err_B[i]=toyfit(ns_nom,B[i],nb_nom,alpha_nom,c.tauminus,c.ifit);
 
   double fb[8]={0.01,0.05,0.10,0.20,0.40,0.50,0.55,0.58};
   double gm2err_fb[8];
   for (int i=0;i<8;i++){
     float nbkg=fb[i]/(1-fb[i])*ns_nom;
-    gm2err_fb[i]=toyfit(ns_nom,B_nom,nbkg,alpha_nom,tauminus,ifit);
+    gm2err_fb[i]=toyfit(ns_nom,B_nom,nbkg,alpha_nom,c.tauminus,c.ifit);
   }
 
   int ns[6]={5000,20000,50000,200000,500000,1000000};
   double gm2err_ns[6];
   for (int i=0;i<6;i++)
-    gm2err_ns[i]=toyfit(ns[i],B_nom,nb_nom,alpha_nom,tauminus,ifit);
+    gm2err_ns[i]=toyfit(ns[i],B_nom,nb_nom,alpha_nom,c.tauminus,c.ifit);
 
   double alpha[8]={5e-3,1e-2,2e-2,3e-2,4e-2,5e-2,1e-1,2e-1};
   double gm2err_alpha[8];
   for (int i=0;i<8;i++)
-    gm2err_alpha[i]=toyfit(ns_nom,B_nom,nb_nom,alpha[i],tauminus,ifit);
+    gm2err_alpha[i]=toyfit(ns_nom,B_nom,nb_nom,alpha[i],c.tauminus,c.ifit);
 
   double thickness[10]={5e-1,1,1.5,2,2.5,3,5,10,20,40};
   double gm2err_thickness[10];
   double eff_thickness[10];
   float tmin=1,tmax=tmin+tauplus*5;   
   float frac_fit=
-    0.5*(exp(-tmin/tauminus)-exp(-tmax/tauminus))+
+    0.5*(exp(-tmin/c.tauminus)-exp(-tmax/c.tauminus))+
     0.5*(exp(-tmin/tauplus)-exp(-tmax/tauplus));
     
   for (int i=0;i<10;i++){
-    float nsig= generate_nsig(nmu,absorber,thickness[i]) ;//nominal number of signal events;
-    gm2err_thickness[i]=toyfit(nsig,B_nom,nb_nom,alpha_nom,tauminus,ifit);
+    float nsig= generate_nsig2(nmu,absorber,thickness[i],W2,d2_3) ;//nominal number of signal events;
+    gm2err_thickness[i]=toyfit(nsig,B_nom,nb_nom,alpha_nom,c.tauminus,c.ifit);
     eff_thickness[i]=nsig/nmu*frac_fit;
   }
   
@@ -624,7 +755,7 @@ void tables(const char* absorber="Cu"){
   double gm2err_Bsigma[10];
   for (int i=0;i<10;i++){
     float DeltaB=B_nom*Bsigma[i]*sqrt(12);
-    gm2err_Bsigma[i]=toyfit(ns_nom,B_nom,nb_nom,alpha_nom,tauminus,ifit,DeltaB);
+    gm2err_Bsigma[i]=toyfit(ns_nom,B_nom,nb_nom,alpha_nom,c.tauminus,c.ifit,DeltaB);
   }
 
   cout<<"B g-2_error_vs_B_"<<absorber<<endl;
