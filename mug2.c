@@ -583,8 +583,8 @@ double generate_nsig2(int nmu, char* absorber, double thickness, double W2, doub
       }
     }
   }
-  cout<<"muon hitting the absorber ="<<n_mu_abs<<" ";
-  cout<<"muon bkg ="<<n_bkg<<" ";
+  //cout<<"muon hitting the absorber ="<<n_mu_abs<<" ";
+  //cout<<"muon bkg ="<<n_bkg<<" ";
   h->Draw();
   cout<<h->GetEntries()<<endl;
   double nele=h->GetEntries();
@@ -592,8 +592,8 @@ double generate_nsig2(int nmu, char* absorber, double thickness, double W2, doub
   return nele;
 }
 
-//3rd version of generate_nsig
-TVector2 generate_nsig3(int nmu, char* absorber, double thickness, double W2, double d2_3){
+//3rd version of generate_nsig : return a vector (nsig, nbkg)
+TVector2 generate_nsig_nbkg(int nmu, char* absorber, double thickness, double W2, double d2_3){
   TVector2 res(0,0);
   //double dedx, rho, tauminus, dummythick; fittype ifit;
   Config c(absorber,1);
@@ -663,13 +663,12 @@ TVector2 generate_nsig3(int nmu, char* absorber, double thickness, double W2, do
   h->Draw();
   cout<<h->GetEntries()<<endl;
   double nele=h->GetEntries();
-  printf("fraction of good events %2.2f/%d = %2.2f%% \n",nele,nmu,nele/nmu*100);
+  //printf("fraction of good events %2.2f/%d = %2.2f%% \n",nele,nmu,nele/nmu*100);
   res.Set(nele,n_bkg);
-  cout<<"muons detected : "<<nele<<" ";
-  cout<<"background : "<<n_bkg<<" "; 
   return res;
- 
 }
+
+
 
 double toy(double nweeks, double B, double nbkg, double alpha, char *absorber, float thickness){
   // double dedx, rho, tauminus, thickness_nom;
@@ -703,10 +702,10 @@ void tables(char* absorber="Cu", double W2=55, double d2_3=10){
   float nmu=time*7;//muons in the acceptance. 
   /* 7 Hz rate is an estimate from Amsler assuming rescaling their rate 
      for muons to an area of 60cm x 60cm area */
-  float ns_nom= generate_nsig2(nmu,absorber,c.thickness,W2,d2_3) ;//nominal number of signal events;
+  float ns_nom= generate_nsig_nbkg(nmu,absorber,c.thickness,W2,d2_3).X() ;//nominal number of signal events;
   cout<<" nominal number of signal events in "<<ndays<<" days = "<<ns_nom<<endl;
-  float nb_nom=1e3*nweeks; // nominal number of background events (guess)
-  
+  //float nb_nom=1e3*nweeks; // nominal number of background events (guess)
+  float nb_nom=generate_nsig_nbkg(nmu,absorber,c.thickness,W2,d2_3).Y();
   /*
     second: generate the distribution of the time differences
     for a given value of B field, background fractoin, measured asymmetry,
@@ -746,10 +745,36 @@ void tables(char* absorber="Cu", double W2=55, double d2_3=10){
     0.5*(exp(-tmin/tauplus)-exp(-tmax/tauplus));
     
   for (int i=0;i<10;i++){
-    float nsig= generate_nsig2(nmu,absorber,thickness[i],W2,d2_3) ;//nominal number of signal events;
+    float nsig= generate_nsig_nbkg(nmu,absorber,thickness[i],W2,d2_3).X() ;//nominal number of signal events;
     gm2err_thickness[i]=toyfit(nsig,B_nom,nb_nom,alpha_nom,c.tauminus,c.ifit);
     eff_thickness[i]=nsig/nmu*frac_fit;
   }
+
+  //test of the scintillator 2 width dependency
+  double scint2_width[10] = {10,15,20,25,30,35,40,45,50,55};
+  double eff_width[10];
+  for (int i=0;i<10;i++){
+    float nsig= generate_nsig_nbkg(nmu,absorber,c.thickness,scint2_width[i],d2_3).X() ;//nominal number of signal events; 
+    eff_width[i]=nsig/nmu;
+  }
+  double frac_bkg[10];
+  for(int i=0;i<10;i++){
+float nbkg = generate_nsig_nbkg(nmu,absorber,c.thickness,scint2_width[i],d2_3).Y() ;
+ frac_bkg[i] = nbkg/nmu;
+}
+
+  //test of the d2_3 depedency
+  double scint_gap[10] = {0.5,1,1.5,2,2.5,3,3.5,4,4.5,5};
+  double eff_gap[10];
+  for(int i=0;i<10;i++){
+   float nsig= generate_nsig_nbkg(nmu,absorber,c.thickness,W2,scint_gap[i]).X() ;
+   eff_gap[i] = nsig/nmu;
+}
+  double bkg_gap[10];
+  for(int i=0;i<10;i++){
+   float nbkg= generate_nsig_nbkg(nmu,absorber,c.thickness,W2,scint_gap[i]).Y() ;
+   bkg_gap[i] = nbkg/nmu;
+}
   
   double Bsigma[10]={0, 1./100, 2./100, 3./100, 3.5/100, 4./100, 4.5/100, 5./100, 6./100, 7./100};
   double gm2err_Bsigma[10];
@@ -792,5 +817,26 @@ void tables(char* absorber="Cu", double W2=55, double d2_3=10){
   cout<<"Bsigma g-2_error_vs_Bsigma_"<<absorber<<endl;
   for (int i=0;i<10;i++)
     cout<<Bsigma[i]<<"\t"<<gm2err_Bsigma[i]<<endl;
+
+  cout<<endl;
+  cout<<"Detection_efficiency_vs_W2_"<<absorber<<endl;
+  for (int i=0;i<10;i++)
+    cout<<scint2_width[i]<<"\t"<<eff_width[i]<<endl;
+
+  cout<<endl;
+  cout<<"Background_frac_vs_W2_"<<absorber<<endl;
+  for (int i=0;i<10;i++)
+    cout<<scint2_width[i]<<"\t"<<frac_bkg[i]<<endl;
+
+  cout<<endl;
+  cout<<"Detection_efficiency_vs_d2_3_"<<absorber<<endl;
+  for (int i=0;i<10;i++)
+    cout<<scint_gap[i]<<"\t"<<eff_gap[i]<<endl;
+
+  cout<<endl;
+  cout<<"Background_frac_vs_d2_3_"<<absorber<<endl;
+  for (int i=0;i<10;i++)
+    cout<<scint_gap[i]<<"\t"<<bkg_gap[i]<<endl;
+
 
 }
