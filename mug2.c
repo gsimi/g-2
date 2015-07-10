@@ -166,7 +166,7 @@ TH1F* generate(int nsig, float B, int nbkg,
 
 enum fittype{single_exp=1,double_exp=2};
 TF1*
-fit(TH1F *h, float B,float tauminus=0, fittype ifit=single_exp){
+fit(TH1F *h, float B,float tauminus=0, fittype ifit=single_exp, float nbkg=0){
   TF1* f;
   switch (ifit){
   case double_exp:
@@ -214,6 +214,7 @@ fit(TH1F *h, float B,float tauminus=0, fittype ifit=single_exp){
   f->FixParameter(5,0);
 
   //nbkg
+  //f->SetParameter(6,nbkg);
   f->SetParameter(6,nevents*0.1);
   f->SetParLimits(6,0,2*nevents);
 
@@ -233,7 +234,7 @@ double toyfit(int nsig, float B, float nbkg, float alpha, float tauminus, fittyp
   //  double nevents=nsig/(1-fb);
   cout<<"toyfit(): nsig = "<<nsig<<", nbkg = "<<nbkg<<endl;
   TH1F* h = generate(nsig, B, nbkg, alpha, tauminus,2.2,DeltaB);
-  TF1* f = fit(h,B,tauminus,ifit);
+  TF1* f = fit(h,B,tauminus,ifit,nbkg);
   return f->GetParError(3);
 }
 
@@ -299,6 +300,9 @@ TH1F* h_ele_e(int nentries){
 /*  public: */
 /*   Absorber(const char* absorber, double &thickness, double& dedx, double &rho, double &tauminus) */
 /* }; */
+
+/* Class that gathers the scintillators and the absorber parameters. For now only one geometry is implemented, but more can be added if necessary.
+ */
 
 class Config{
  public:
@@ -366,51 +370,11 @@ Config::Config(char *absorber, int geometry){
   }
 }
 
-/* void config(const char* absorber, double &thickness, double& dedx, double &rho, double &tauminus, */
-/* 	    fittype& ifit){ */
 
-/*   /\* thickness is the default thickness of the absorber. It is */
-/*      defined such that the energy loss in different materials is the same. */
-/*      The absolute normalization is given by the thickness of the copper absorber */
-/*      set so that the energy loss is 31MeV *\/ */
-
-/*   if (strcmp(absorber, "Cu")==0){ */
-/*     // copper */
-/*     dedx=1.4; */
-/*     rho=8.9; */
-/*     tauminus=0.16;//mus */
-/*     thickness=2.5;//cm */
-/*     ifit=single_exp; */
-/*   } */
-/*   if (strcmp(absorber,"Al")==0){ */
-/*     // aluminium */
-/*     dedx=1.6; */
-/*     rho=2.7; */
-/*     tauminus=0.88;//mus */
-/*     thickness=2.5*8.9*1.4/rho/dedx; */
-/*     ifit=double_exp; */
-/*   } */
-/*   if (strcmp(absorber,"Sci")==0){ */
-/*     dedx=1.03; */
-/*     rho=2.0; */
-/*     tauminus=2.03;//mus */
-/*     thickness=2.5*8.9*1.4/rho/dedx; */
-/*     ifit=double_exp; */
-/*   } */
-/*   if (strcmp(absorber,"Pb")==0){ */
-/*     dedx=1.12; */
-/*     rho=11.35; */
-/*     tauminus=75./1000.;//mus */
-/*     thickness=2.5*8.9*1.4/rho/dedx; */
-/*     ifit=single_exp; */
-/*   } */
-/* } */
-
-
-/* Function checking if the muon, given its position, angle, the absorber and the geometry of the experiment, is likely to hit : 
-- scintillator 2 (level 1)
-- the absorber (level 2)
-- scintillator 3 (level 3)
+/* Function checking if the muon, given its position, angle and the configuration of the experiment, is likely to hit : 
+- scintillator 2 
+- the absorber 
+- scintillator 3 
  */
 enum targettype{scint1,scint2,absor,scint3};
 
@@ -452,15 +416,20 @@ bool check_muon(double mu_pos, double theta, Config cfg, targettype target){
     break;
   }
   default:
-  cout<<"target must be scint2, scint3 or absorber"<<endl;
+  cout<<"target must be scint2, scint3 or absor"<<endl;
   }
 
   if ((theta>theta_min) && (theta<theta_max)){
     check = true;
   }
-  //cout<<"the result of the test is : "<<check<<" ";
   return check;
 }
+
+
+/* Function checking if the electron, given its position, angle and the configuration of the experiment, is likely to hit : 
+- scintillator 1 
+- scintillator 2
+ */
 
 bool check_ele(double ele_x, double ele_y, double ele_theta, Config cfg, targettype target){
   double theta_min = 0; 
@@ -470,7 +439,7 @@ bool check_ele(double ele_x, double ele_y, double ele_theta, Config cfg, targett
 
   switch (target){
   case scint2: {
-    doube d = cfg.d2+cfg.d2_a+ele_y;
+    double d = cfg.d2+cfg.d2_a+ele_y;
     //case 1 : electron at the right of scintillator 2
     if (ele_x > ((cfg.W13+cfg.W2)/2)){
       theta_min = atan((ele_x-(cfg.W13+cfg.W2)/2)/d);
@@ -552,7 +521,7 @@ double generate_nsig(int nmu, char* absorber, double thickness){
   return nele;
 }
 
-//3rd version of generate_nsig : return a vector (nsig, nbkg)
+//New version of generate_nsig : return a vector (nsig, nbkg) and takes into account the geometry of the experiment
 TVector2 generate_nsig_nbkg(int nmu, char* absorber, double thickness, double W2, double d2_3){
   TVector2 res(0,0);
   Config cfg(absorber,1);
@@ -562,21 +531,23 @@ TVector2 generate_nsig_nbkg(int nmu, char* absorber, double thickness, double W2
   /* float reference_pstop=1e-2; */
   /* float pstop=reference_pstop*thickness*dedx*rho/(2.5*1.4*8.9);  */
   float p_absorb_per_MeV=0.01/10; // 1%/10MeV 
+  //float p_absorb_per_MeV=0.024/10; // 2.4%/10MeV 
   float stop=cfg.dedx*cfg.rho*p_absorb_per_MeV;
-  targettype scint2 = scint2;
-  targettype absor = absor;
-  targettype scint3 = scint3;
   double d = cfg.d1+cfg.d2+cfg.d1_2+cfg.d2_a;
   TRandom r;
   TH1F* h = new TH1F("e_ele","ele energy",100,0,52.8);
   double n_bkg = 0;
+  /* testing numbers
   double n_mu_abs = 0;
+  double n_mu_stopped = 0;
+  double n_ele_stopped1 = 0;
+  double n_ele_stopped2 = 0;
+  double n_ele_escaped = 0; */
   for (int i=0;i<nmu;i++){
     //muon position and angle at the top of scintillator 1, between 0 and W1
     double mu_pos = generate_mu_position(&r,cfg.W13);
     int b = floor(r.Uniform(0,10));
     double mu_theta = pow(-1,b)*acos(generate_mu_costheta(&r));  //theta can be either positive or negative
-    //cout<<"theta ="<<mu_theta<<" ";
     if (check_muon(mu_pos,mu_theta,cfg,scint2)){
       if (!check_muon(mu_pos,mu_theta,cfg,absor)){
 	n_bkg++;
@@ -586,15 +557,16 @@ TVector2 generate_nsig_nbkg(int nmu, char* absorber, double thickness, double W2
 	  n_bkg++;
 	}
 	else { //is a signal candidate
-	  n_mu_abs++;
+	  //n_mu_abs++;
 	  double a = r.Uniform(0,1);
 	  if (a<=stop){
+	    //n_mu_stopped++;
 	    //generate the direction of the muon spin
 	    //float mu_costheta=generate_mu_costheta(&r);
 	    float mu_costheta = cos(mu_theta);
 	    TVector3 vmu(0,0,1); 
 	    vmu.RotateX(acos(mu_costheta));
-	    //generate direction of the elctron momentum         
+	    //generate direction of the electron momentum         
 	    float ele_costheta=generate_ele_costheta(&r);
 	    float ele_phi=r.Uniform(-3.1416,3.1416);
 	    TVector3 vele(vmu);
@@ -602,30 +574,48 @@ TVector2 generate_nsig_nbkg(int nmu, char* absorber, double thickness, double W2
 	    vele.Rotate(ele_phi,vmu);
 	    /* discard downgoing electrons and electrons stopped in the absorber */
 	    if (vele.CosTheta()<0) {
+	      //n_ele_stopped1++;
 	      n_bkg++;
 	      continue;
 	    }
-	    //generate the position where the muon has stopped
+	    //generate the position where the muon has stopped and the angle of the electron
 	    float ele_y=r.Uniform(0,thickness);
 	    float ele_x = mu_pos+(d+ele_y)*tan(mu_theta);
+	    float ele_theta = acos(ele_costheta);
 	    //length travelled by the electron to exit the slab
 	    double l=(thickness-ele_y)/vele.CosTheta();
 	    //energy lost by electron
 	    double deltaE=l*cfg.rho*cfg.dedx;
 	    double eleE=ele_energy(&r);
-	    if (eleE<deltaE) continue;
+	    if (eleE<deltaE){
+	      //n_ele_stopped2++;
+	      continue;
+	    }
+	    /* checks if the electron is going to hit scintillators 1 and 2 */
+	    if (!check_ele(ele_x,ele_y,ele_theta,cfg,scint2) || !check_ele(ele_x,ele_y,ele_theta,cfg,scint1)){
+	      //n_ele_escaped++;
+	      n_bkg++;
+	    }
+	    else {
 	    h->Fill(eleE);
+	    }
 	  }
 	}
       }
     }
   }
-  cout<<"muon hitting the absorber ="<<n_mu_abs<<" ";
-  cout<<"muon bkg ="<<n_bkg<<" ";
   h->Draw();
   //cout<<h->GetEntries()<<endl;
   double nele=h->GetEntries();
+  /* display of the testing numbers
+  cout<<"muon hitting the absorber ="<<n_mu_abs<<" ";
+  cout<<"muon stopped in the absorber ="<<n_mu_stopped<<" ";
+  cout<<"muon bkg ="<<n_bkg<<" ";
+  cout<<"ele stopped1 ="<<n_ele_stopped1<<" ";
+  cout<<"ele stopped2 ="<<n_ele_stopped2<<" ";
+  cout<<"ele escaped ="<<n_ele_escaped<<" ";
   cout<<"true muons ="<<nele<<" ";
+  */
   //printf("fraction of good events %2.2f/%d = %2.2f%% \n",nele,nmu,nele/nmu*100);
   res.Set(nele,n_bkg);
   return res;
@@ -651,7 +641,7 @@ double toy(double nweeks, double B, double nbkg, double alpha, char *absorber, f
  return gm2err;  
 }
 
-void tables(char* absorber="Cu", double W2=50, double d2_3=10){
+void tables(char* absorber="Cu", double W2=50, double d2_3=3){
   //double dedx, rho, tauminus, thickness_nom; fittype ifit;
   //config(absorber,thickness_nom, dedx,rho,tauminus,ifit);
   Config cfg(absorber,1);
@@ -714,52 +704,57 @@ void tables(char* absorber="Cu", double W2=50, double d2_3=10){
     gm2err_thickness[i]=toyfit(nsig,B_nom,nb_nom,alpha_nom,cfg.tauminus,cfg.ifit);
     eff_thickness[i]=nsig/nmu*frac_fit;
   }
-  /*
-  //scintillator 2 width dependency
-  double scint2_width1[10] = {10,15,20,25,30,35,40,45,50,55};
-  double eff_width[10];
-  for (int i=0;i<10;i++){
-    float nsig= generate_nsig_nbkg(nmu,absorber,c.thickness,scint2_width1[i],d2_3).X() ;//nominal number of signal events; 
-    eff_width[i]=nsig/nmu;
-  }
-  double frac_bkg[10];
-  for(int i=0;i<10;i++){
-float nbkg = generate_nsig_nbkg(nmu,absorber,c.thickness,scint2_width[i],d2_3).Y() ;
- frac_bkg[i] = nbkg/nmu;
- }
-  //d2_3 depedency
-  double scint_gap[10] = {5.5,6,6.5,7,7.5,8,8.5,9,9.5,10};
-  double eff_gap[10];
-  for(int i=0;i<10;i++){
-   float nsig= generate_nsig_nbkg(nmu,absorber,c.thickness,W2,scint_gap[i]).X() ;
-   eff_gap[i] = nsig/nmu;
-   }
-  double bkg_gap[10];
-  for(int i=0;i<10;i++){
-   float nbkg= generate_nsig_nbkg(nmu,absorber,c.thickness,W2,scint_gap[i]).Y() ;
-   bkg_gap[i] = nbkg/nmu;
-   }
-  double scint2_width[10] = {2.5,7.5,12.5,17.5,22.5,27.5,32.5,37.5,42.5,47.5};
-  double gm2err_W2[10];  
-  for (int i=0;i<10;i++){
-    float nsig = generate_nsig_nbkg(nmu,absorber,c.thickness,scint2_width[i],d2_3).X();
-    float nbkg = generate_nsig_nbkg(nmu,absorber,c.thickness,scint2_width[i],d2_3).Y();
-    gm2err_W2[i] = toyfit(nsig,B_nom,nbkg,alpha_nom,c.tauminus,c.ifit);
-  }
-  double scint_gap[10] = {0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5};
-  double gm2err_d2_3[10];  
-  for (int i=0;i<10;i++){
-    float nsig = generate_nsig_nbkg(nmu,absorber,c.thickness,W2,scint_gap[i]).X();
-    float nbkg = generate_nsig_nbkg(nmu,absorber,c.thickness,W2,scint_gap[i]).Y();
-    gm2err_d2_3[i] = toyfit(nsig,B_nom,nbkg,alpha_nom,c.tauminus,c.ifit);
-  }
-  */
+
   double Bsigma[10]={0, 1./100, 2./100, 3./100, 3.5/100, 4./100, 4.5/100, 5./100, 6./100, 7./100};
   double gm2err_Bsigma[10];
   for (int i=0;i<10;i++){
     float DeltaB=B_nom*Bsigma[i]*sqrt(12);
     gm2err_Bsigma[i]=toyfit(ns_nom,B_nom,nb_nom,alpha_nom,cfg.tauminus,cfg.ifit,DeltaB);
   }
+
+  /*
+  //scintillator 2 width dependency
+  double scint2_width[20] = {2.5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40,42.5,45,47.5,50,55};
+  double eff_width[20];
+  for (int i=0;i<20;i++){
+    float nsig= generate_nsig_nbkg(nmu,absorber,cfg.thickness,scint2_width[i],d2_3).X() ;//nominal number of signal events; 
+    eff_width[i]=nsig/nmu;
+  }
+  double frac_bkg[20];
+  for(int i=0;i<20;i++){
+    float nbkg = generate_nsig_nbkg(nmu,absorber,cfg.thickness,scint2_width[i],d2_3).Y() ;
+    frac_bkg[i] = nbkg/nmu;
+ }
+ 
+  //d2_3 depedency
+  double scint_gap[20] = {0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10};
+  double eff_gap[20];
+  for(int i=0;i<20;i++){
+   float nsig= generate_nsig_nbkg(nmu,absorber,cfg.thickness,W2,scint_gap[i]).X() ;
+   eff_gap[i] = nsig/nmu;
+   }
+  double bkg_gap[20];
+  for(int i=0;i<20;i++){
+   float nbkg= generate_nsig_nbkg(nmu,absorber,cfg.thickness,W2,scint_gap[i]).Y() ;
+   bkg_gap[i] = nbkg/nmu;
+   }
+
+
+  double scint2_width1[31] = {20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50};
+  double gm2err_W2[31];  
+  for (int i=0;i<31;i++){
+    float nsig = generate_nsig_nbkg(nmu,absorber,cfg.thickness,scint2_width1[i],d2_3).X();
+    float nbkg = generate_nsig_nbkg(nmu,absorber,cfg.thickness,scint2_width1[i],d2_3).Y();
+    gm2err_W2[i] = toyfit(nsig,B_nom,nbkg,alpha_nom,cfg.tauminus,cfg.ifit);
+  }
+  double scint_gap[30] = {2,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3,3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,4,4.1,4.2,4.3,4.4,4.5,4.6,4.7,4.8,4.9};
+  double gm2err_d2_3[30];  
+  for (int i=0;i<30;i++){
+    float nsig = generate_nsig_nbkg(nmu,absorber,cfg.thickness,W2,scint_gap[i]).X();
+    float nbkg = generate_nsig_nbkg(nmu,absorber,cfg.thickness,W2,scint_gap[i]).Y();
+    gm2err_d2_3[i] = toyfit(nsig,B_nom,nbkg,alpha_nom,cfg.tauminus,cfg.ifit);
+  }
+  */
 
   cout<<"B g-2_error_vs_B_"<<absorber<<endl;
   for (int i=0;i<15;i++)
@@ -795,35 +790,35 @@ float nbkg = generate_nsig_nbkg(nmu,absorber,c.thickness,scint2_width[i],d2_3).Y
   cout<<"Bsigma g-2_error_vs_Bsigma_"<<absorber<<endl;
   for (int i=0;i<10;i++)
     cout<<Bsigma[i]<<"\t"<<gm2err_Bsigma[i]<<endl;
-  /*
+  /* 
   cout<<endl;
   cout<<"Detection_efficiency_vs_W2_"<<absorber<<endl;
-  for (int i=0;i<10;i++)
-    cout<<scint2_width1[i]<<"\t"<<eff_width[i]<<endl;
+  for (int i=0;i<20;i++)
+    cout<<scint2_width[i]<<"\t"<<eff_width[i]<<endl;
 
   cout<<endl;
   cout<<"Background_frac_vs_W2_"<<absorber<<endl;
-  for (int i=0;i<10;i++)
-    cout<<scint2_width[i]<<"\t"<<frac_bkg[i]<<endl;
+  for (int i=0;i<20;i++)
+    cout<<scint2_width[i]<<"\t"<<frac_bkg[i]<<endl;  
 
   cout<<endl;
   cout<<"Detection_efficiency_vs_d2_3_"<<absorber<<endl;
-  for (int i=0;i<10;i++)
+  for (int i=0;i<20;i++)
     cout<<scint_gap[i]<<"\t"<<eff_gap[i]<<endl;
 
   cout<<endl;
   cout<<"Background_frac_vs_d2_3_"<<absorber<<endl;
-  for (int i=0;i<10;i++)
+  for (int i=0;i<20;i++)
     cout<<scint_gap[i]<<"\t"<<bkg_gap[i]<<endl;
-  
+
   cout<<endl;
   cout<<"W2 g-2_error_vs_W2_"<<absorber<<endl;
-  for (int i=0;i<10;i++)
-    cout<<scint2_width[i]<<"\t"<<gm2err_W2[i]<<endl;
+  for (int i=0;i<31;i++)
+    cout<<scint2_width1[i]<<"\t"<<gm2err_W2[i]<<endl;
 
   cout<<endl;
   cout<<"d2_3 g-2_error_vs_d2_3_"<<absorber<<endl;
-  for (int i=0;i<10;i++)
+  for (int i=0;i<30;i++)
     cout<<scint_gap[i]<<"\t"<<gm2err_d2_3[i]<<endl;
-  */
+ */
 }
