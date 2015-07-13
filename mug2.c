@@ -296,6 +296,35 @@ TH1F* h_ele_e(int nentries){
   return h;
 }
 
+class Track{
+ public:
+  Track(double x, double y, double theta);
+  ~Track(){};
+  TVector2 GetPosAtY(double y);
+  TVector2 GetPos();
+  double GetDir();
+ private:
+  TVector2 pos;
+  double theta;
+};
+Track::Track(double x, double y, double angle){  
+  pos.Set(x,y);
+  theta = angle;
+}
+TVector2 Track::GetPosAtY(double y){
+  TVector2 pos_ini = pos;
+  double x_new = pos_ini.X()-(pos_ini.Y()-y)/tan(theta);
+  pos_ini.Set(x_new,y);
+  cout<<"position is "<<x_new<<endl;
+  return pos_ini;
+}
+TVector2 Track::GetPos(){
+  return pos;
+}
+double Track::GetDir(){
+  return theta;
+}
+
 /* class Absorber{ */
 /*  public: */
 /*   Absorber(const char* absorber, double &thickness, double& dedx, double &rho, double &tauminus) */
@@ -378,6 +407,54 @@ Config::Config(char *absorber, int geometry){
  */
 enum targettype{scint1,scint2,absor,scint3};
 
+/* Function to calculate the pattern of the track, returns a binary number which value depends on the devices hit by the muon/electron (for instance the trigger pattern is 011 for scint3/scint2/scint1)
+ */
+int get_pattern(Track track, Config cfg){
+  bool scint3 = false;
+  bool scint2 = false;
+  bool scint1 = false;
+  int rep = 0x0;
+
+  double D3 = cfg.d1+cfg.d1_2+cfg.d2+cfg.d2_3;
+  double x_3 = track.GetPosAtY(-D3).X();
+  if (x_3>=0 && x_3<=cfg.W13){
+    scint3 = true;
+    rep = rep | (0x1<<2);
+  }
+
+  double D2 = cfg.d1+cfg.d1_2+(cfg.d2)/2;
+  double x_2 = track.GetPosAtY(-D2).X();
+  if (x_2>=(cfg.W13-cfg.W2)/2 && x_2 <=(cfg.W13+cfg.W2)/2){
+    scint2 = true;
+    rep = rep | (0x1<<1);
+  }
+  
+  double x_1 = track.GetPosAtY(-cfg.d1/2).X();
+  if (x_1>=0 && x_1<=cfg.W13){
+    scint1 = true; 
+    rep = rep | 0x1;
+  }
+
+  cout<<"scint 3 ="<<scint3<<" ";
+  cout<<"scint 2 ="<<scint2<<" ";
+  cout<<"scint 1 ="<<scint1<<" ";
+
+  return rep;
+}
+
+/* Function that will first check if the muon hits the absorber, then generates a random value, compares it to the stopping power and determine if an electron is generated or not
+ */
+bool is_absorbed(Track track, Config cfg){
+  double Da = cfg.d1+cfg.d1_2+cfg.d2+cfg.d2_a+(cfg.thickness/2);
+  double x_a = track.GetPosAtY(-Da).X();
+  bool abs = false;
+  if (x_a>=0 && x_a<=cfg.W13){
+    abs = true;
+  }
+  //condition of stopped muon 
+  return abs;
+}
+
 bool check_muon(double mu_pos, double theta, Config cfg, targettype target){
   double theta_min = 0; 
   double theta_max = 0;
@@ -423,6 +500,16 @@ bool check_muon(double mu_pos, double theta, Config cfg, targettype target){
     check = true;
   }
   return check;
+}
+
+
+void test(double x, double y, double theta){
+  Track t(x,y,theta);
+  Config cfg("Cu",1);
+  int rep = get_pattern(t,cfg);
+  if(check_muon(x,theta,cfg,scint2)) cout<<"check2 = true "<<endl;
+  if(check_muon(x,theta,cfg,scint3)) cout<<"check3 = true "<<endl;
+  if(check_muon(x,theta,cfg,absor)) cout<<"checka = true "<<endl;
 }
 
 
@@ -630,7 +717,9 @@ double toy(double nweeks, double B, double nbkg, double alpha, char *absorber, f
   Config cfg(absorber,1);
   float ndays=nweeks*7;
   float time=ndays*24*3600;//in seconds
-  float nmu=time*7;//muons in the acceptance. 
+  float surf1=50*60; //surface of scint1 in cm2
+  float murate=1*surf1;//  cosmic muons rate ~ 1 muon/min/cm2
+  float nmu=time*murate;//muons in the acceptance. 
   /* 7 Hz rate is an estimate from Amsler assuming rescaling their rate 
      for muons to an area of 60cm x 60cm area */
   float nele= generate_nsig_nbkg(nmu,absorber,thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
