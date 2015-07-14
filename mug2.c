@@ -437,10 +437,10 @@ int get_pattern(Track track, Config cfg){
     scint1 = true; 
     rep = rep | 0x1;                      //allocate the value 1 to the third digit
   }
-  cout<<"scint 3 ="<<scint3<<" ";
-  cout<<"scint 2 ="<<scint2<<" ";
-  cout<<"scint 1 ="<<scint1<<" ";
-  cout<<"rep = "<<rep<<" ";
+  //cout<<"scint 3 ="<<scint3<<" ";
+  //cout<<"scint 2 ="<<scint2<<" ";
+  //cout<<"scint 1 ="<<scint1<<" ";
+  //cout<<"rep = "<<rep<<" ";
   return rep;
 }
 
@@ -448,12 +448,11 @@ int get_pattern(Track track, Config cfg){
 
 /* Function that will first get the position of the muon at the altitude of the absorber, then generates a random value, compares it to the stopping power and determine if the muon is absorbed or not.
  */
-bool is_absorbed(Track track, Config cfg){
-  double Da = cfg.d1+cfg.d1_2+cfg.d2+cfg.d2_a+(cfg.thickness/2);
+bool is_absorbed(Track track, Config cfg, TRandom *r){
+  double Da = cfg.d1+cfg.d1_2+cfg.d2+cfg.d2_a;
   double x_a = track.GetPosAtY(-Da).X();
   //cout<<"x_a = "<<x_a<<" ";
   bool abs = false;
-  TRandom r;
   //reference_pstop is that of 2.5 cm of copper (from Amsler)
   /* float reference_pstop=1e-2; */
   /* float pstop=reference_pstop*thickness*dedx*rho/(2.5*1.4*8.9);  */
@@ -462,9 +461,9 @@ bool is_absorbed(Track track, Config cfg){
   //cout<<"dedx , rho , pabs = "<<cfg.dedx<<" , "<<cfg.rho<<" , "<<p_absorb_per_MeV<<" "; 
   float stop=cfg.dedx*cfg.rho*p_absorb_per_MeV;
   //cout<<"stop = "<<stop<<" ";
-  double a = r.Uniform(0,1);
+  double a = r->Uniform(0,1);
   //cout<<"a = "<<a<<" ";
-  abs = (x_a>=0 && x_a<=cfg.W13) && a<=stop;
+  abs = (x_a>=0 && x_a<=cfg.W13) && a<=stop;           //true only if the muon hits the absorber and is stopped
 
   return abs;
 }
@@ -473,27 +472,27 @@ enum particletype{muon,electron};
 
 /* Function that first get the pattern of the track, and returns a string depending on the trigger pattern and on the particle considered.
  */
-string analyse_track(Track track, Config cfg, particletype particle){
+string analyse_track(Track track, Config cfg, particletype particle,TRandom r){
   string s = "";
   int pattern = get_pattern(track,cfg);
   switch(particle){
- 
-  case (muon){
+  case muon: {
     if(pattern == 3){                     //if the muon hits scint 1 and 2 but will not hit scint3
-      if(is_absorbed(track,cfg)){
-	s = "signal";                    
+
+      if(is_absorbed(track,cfg,&r)){
+	s = "signal";              
       }
       else { 
-	s = "bkg";
+	s = "011nonabsorbed";
       }
     }
     else{
       if(pattern == 7){                   //if the muon hits scint 1 and 2 and is going to hit scint3
-	if(is_absorbed(track,cfg)){
+	if(is_absorbed(track,cfg,&r)){
 	  s = "signal";
 	}
 	else {
-	  s = "false";
+	  s = "111nonabsorbed";
 	}
       }
       else {                        //in any other cases
@@ -503,17 +502,17 @@ string analyse_track(Track track, Config cfg, particletype particle){
     break;
   }
 
-  case(electron){
+  case electron: {
     double theta_ele = track.GetDir();
-    if((theta_ele>=-2*3.1416 && theta_ele<=-3.1416) || (theta_ele>=3.1416 && theta_ele<=2-3.1416)){         //if the electron is not downgoing
-      if ((pattern == 3) || (pattern == 7)){
-      s = "signal"
+    if((theta_ele>=-2*3.1416 && theta_ele<=-3.1416) || (theta_ele>=3.1416 && theta_ele<=2*3.1416)){         //if the electron is upgoing
+      if ((pattern == 3) || (pattern == 7)){          //if it hits scint 1 and 2 (the fact that it also hits scint3 is irrelevant considering it as upgoing)
+	s = "signal";
       }
-      else {
+      else {                         //if it does not hit both scint 1 and 2
 	s = "false";
       }
     }
-    else {
+    else {               //if it is downgoing
       s = "false";
     }
     break;  
@@ -521,7 +520,7 @@ string analyse_track(Track track, Config cfg, particletype particle){
   default :
     cout<<"particle must be muon or electron"<<endl;
   }
-  cout<<"result is : "<<s<<endl;
+  //cout<<"result is : "<<s<<endl;
   return s;
 }
 
@@ -573,11 +572,11 @@ bool check_muon(double mu_pos, double theta, Config cfg, targettype target){
 }
 
 
-void test(double x, double y, double theta){
-  Track t(x,y,theta);
-  Config cfg("Cu",1);
-  string rep = analyse_track(t,cfg);
-}
+/* void test(double x, double y, double theta){ */
+/*   Track t(x,y,theta); */
+/*   Config cfg("Cu",1); */
+/*   string rep = analyse_track(t,cfg); */
+/* } */
 
 
 /* Function checking if the electron, given its position, angle and the configuration of the experiment, is likely to hit : 
@@ -691,12 +690,11 @@ TVector2 generate_nsig_nbkg(int nmu, char* absorber, double thickness, double W2
   TRandom r;
   TH1F* h = new TH1F("e_ele","ele energy",100,0,52.8);
   double n_bkg = 0;
-  /* testing numbers
+  /* testing numbers */
   double n_mu_abs = 0;
-  double n_mu_stopped = 0;
-  double n_ele_stopped1 = 0;
-  double n_ele_stopped2 = 0;
-  double n_ele_escaped = 0; */
+  //double n_ele_stopped1 = 0;
+  double n_ele_stopped = 0;
+  double n_ele_escaped = 0; 
   for (int i=0;i<nmu;i++){
     //muon position and angle at the top of scintillator 1, between 0 and W1
     double mu_pos = generate_mu_position(&r,cfg.W13);
@@ -711,10 +709,9 @@ TVector2 generate_nsig_nbkg(int nmu, char* absorber, double thickness, double W2
 	  n_bkg++;
 	}
 	else { //is a signal candidate
-	  //n_mu_abs++;
 	  double a = r.Uniform(0,1);
 	  if (a<=stop){
-	    //n_mu_stopped++;
+	    n_mu_abs++;
 	    //generate the direction of the muon spin
 	    //float mu_costheta=generate_mu_costheta(&r);
 	    float mu_costheta = cos(mu_theta);
@@ -742,12 +739,12 @@ TVector2 generate_nsig_nbkg(int nmu, char* absorber, double thickness, double W2
 	    double deltaE=l*cfg.rho*cfg.dedx;
 	    double eleE=ele_energy(&r);
 	    if (eleE<deltaE){
-	      //n_ele_stopped2++;
+	      n_ele_stopped++;
 	      continue;
 	    }
 	    /* checks if the electron is going to hit scintillators 1 and 2 */
 	    if (!check_ele(ele_x,ele_y,ele_theta,cfg,scint2) || !check_ele(ele_x,ele_y,ele_theta,cfg,scint1)){
-	      //n_ele_escaped++;
+	      n_ele_escaped++;
 	      n_bkg++;
 	    }
 	    else {
@@ -761,15 +758,118 @@ TVector2 generate_nsig_nbkg(int nmu, char* absorber, double thickness, double W2
   h->Draw();
   //cout<<h->GetEntries()<<endl;
   double nele=h->GetEntries();
-  /* display of the testing numbers
-  cout<<"muon hitting the absorber ="<<n_mu_abs<<" ";
-  cout<<"muon stopped in the absorber ="<<n_mu_stopped<<" ";
-  cout<<"muon bkg ="<<n_bkg<<" ";
-  cout<<"ele stopped1 ="<<n_ele_stopped1<<" ";
-  cout<<"ele stopped2 ="<<n_ele_stopped2<<" ";
-  cout<<"ele escaped ="<<n_ele_escaped<<" ";
-  cout<<"true muons ="<<nele<<" ";
-  */
+  /* display of the testing numbers */
+  cout<<"muon absorbed = "<<n_mu_abs<<" ";
+  //cout<<"muon stopped in the absorber ="<<n_mu_stopped<<" ";
+  cout<<"muon bkg = "<<n_bkg<<" ";
+  //cout<<"ele stopped1 ="<<n_ele_stopped1<<" ";
+  cout<<"ele stopped = "<<n_ele_stopped<<" ";
+  cout<<"ele escaped = "<<n_ele_escaped<<" ";
+  cout<<"true muons = "<<nele<<" ";
+  
+  //printf("fraction of good events %2.2f/%d = %2.2f%% \n",nele,nmu,nele/nmu*100);
+  res.Set(nele,n_bkg);
+  return res;
+}
+
+//last version of this function
+TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W2, double d2_3){
+  TVector2 res(0,0);
+  Config cfg(absorber,1);
+  cfg.W2 = W2;
+  cfg.d2_3 = d2_3;
+  double d = cfg.d1+cfg.d2+cfg.d1_2+cfg.d2_a;
+  TRandom r;
+  TH1F* h = new TH1F("e_ele","ele energy",100,0,52.8);
+  double n_bkg = 0;
+  /* testing numbers*/
+  double n_mu_abs = 0;    //number of signal candidates for the muons
+  double n_sig_cand_ele = 0;    //number of signal candidates for the electrons
+  double n_ele_stopped = 0;    //number of electrons stopped in the absorber
+  double n_ele_escaped = 0;    //number of electrons that went out of the absorber 
+  double tbna = 0;
+  double fana = 0; 
+
+  for (int i=0;i<nmu;i++){
+    //muon position and angle at the top of scintillator 1, between 0 and W13
+    double mu_x = generate_mu_position(&r,cfg.W13);
+    double mu_y = 0.;
+    int b = floor(r.Uniform(0,10));
+    double mu_theta = pow(-1,b)*acos(generate_mu_costheta(&r));  //theta can be either positive or negative
+    //cout<<"muon x,y,theta : "<<mu_x<<","<<mu_y<<","<<mu_theta<<" // ";
+    Track mu_track(mu_x,mu_y,mu_theta);
+    string s_mu = analyse_track(mu_track,cfg,muon,r);
+    if (s_mu == "signal"){    //is a signal candidate
+      n_mu_abs++;
+      //generate the direction of the muon spin
+      float mu_costheta = cos(mu_theta);
+      TVector3 vmu(0,0,1); 
+      vmu.RotateX(acos(mu_costheta));
+      //generate direction of the electron momentum         
+      float ele_costheta=generate_ele_costheta(&r);
+      //cout<<"ele_costheta = "<<ele_costheta<<" ";
+      float ele_phi=r.Uniform(-3.1416,3.1416);
+      TVector3 vele(vmu);
+      float ele_theta = acos(ele_costheta);
+      if(ele_theta>0) ele_theta = 3.1416+ele_theta ;
+      if(ele_theta<=0) ele_theta = -3.1416+ele_theta;
+      vele.RotateX(ele_theta);
+      vele.Rotate(ele_phi,vmu);
+      //generate the position where the muon has stopped and the angle of the electron
+      float ele_y=-d-r.Uniform(0,thickness);
+      float ele_x = mu_x+(d+ele_y)*tan(mu_theta);
+      //cout<<"ele x,y,theta,phi : "<<ele_x<<","<<ele_y<<","<<ele_theta<<","<<ele_phi<<" // ";
+      //cout<<"ele_theta = "<<ele_theta<<" ";
+      Track ele_track(ele_x,ele_y,ele_theta);
+      string s_ele = analyse_track(ele_track,cfg,electron,r);
+      if (s_ele == "signal"){
+	n_sig_cand_ele++;
+	//length travelled by the electron to exit the slab
+	double l=(thickness-ele_y)/vele.CosTheta();
+	//energy lost by electron
+	double deltaE=l*cfg.rho*cfg.dedx;
+	double eleE=ele_energy(&r);
+	if (eleE<deltaE){
+	  n_bkg++;
+	  n_ele_stopped++;
+	  continue;
+	}
+	h->Fill(eleE);
+      }
+      else{
+	n_ele_escaped++;
+	n_bkg++;
+      }
+    }
+    if (s_mu == "bkg"){
+      n_bkg++;
+    }
+    if (s_mu == "011nonabsorbed"){
+      n_bkg++;
+      tbna++;
+    }
+    if (s_mu == "111nonabsorbed"){
+      fana++;
+    }
+  }
+/* discard downgoing electrons and electrons stopped in the absorber
+   if (vele.CosTheta()<0) {
+   //n_ele_stopped1++;
+   n_bkg++;
+   continue;
+   }*/
+  h->Draw();
+  //cout<<h->GetEntries()<<endl;
+  double nele=h->GetEntries();
+  /* display of the testing numbers*/
+  cout<<"muon absorbed = "<<n_mu_abs<<" / ";
+  cout<<"muon true but non absorbed = "<<tbna<<" / ";
+  cout<<"false and non absorbed = "<<fana<<" / ";
+  cout<<"electron signal candidates = "<<n_sig_cand_ele<<" / ";
+  cout<<"bkg = "<<n_bkg<<" / ";
+  cout<<"electrons stopped = "<<n_ele_stopped<<" / ";
+  cout<<"electrons escaped = "<<n_ele_escaped<<" / ";
+  cout<<"true muons = "<<nele<<" ";
   //printf("fraction of good events %2.2f/%d = %2.2f%% \n",nele,nmu,nele/nmu*100);
   res.Set(nele,n_bkg);
   return res;
