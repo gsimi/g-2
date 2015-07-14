@@ -296,6 +296,9 @@ TH1F* h_ele_e(int nentries){
   return h;
 }
 
+/* Class that gathers information about the particle trajectory.
+It contains the function GetPosAtY(y) which find the position of the particle at a given Y coordinate.
+ */
 class Track{
  public:
   Track(double x, double y, double theta);
@@ -315,7 +318,7 @@ TVector2 Track::GetPosAtY(double y){
   TVector2 pos_ini = pos;
   double x_new = pos_ini.X()-(pos_ini.Y()-y)/tan(theta);
   pos_ini.Set(x_new,y);
-  cout<<"position is "<<x_new<<endl;
+  //cout<<"position is "<<x_new<<endl;
   return pos_ini;
 }
 TVector2 Track::GetPos(){
@@ -407,7 +410,7 @@ Config::Config(char *absorber, int geometry){
  */
 enum targettype{scint1,scint2,absor,scint3};
 
-/* Function to calculate the pattern of the track, returns a binary number which value depends on the devices hit by the muon/electron (for instance the trigger pattern is 011 for scint3/scint2/scint1)
+/* Function that calculates the pattern of the track, returns a binary number which value depends on the devices hit by the muon/electron (for instance the pattern 011 stands for non-scint3/scint2/scint1)
  */
 int get_pattern(Track track, Config cfg){
   bool scint3 = false;
@@ -416,43 +419,110 @@ int get_pattern(Track track, Config cfg){
   int rep = 0x0;
 
   double D3 = cfg.d1+cfg.d1_2+cfg.d2+cfg.d2_3;
-  double x_3 = track.GetPosAtY(-D3).X();
-  if (x_3>=0 && x_3<=cfg.W13){
+  double x_3 = track.GetPosAtY(-D3).X();       //find the X coordinate of the particle at the altitude of the device considered (here scint3)
+  if (x_3>=0 && x_3<=cfg.W13){                // if the X coordinate is within the width of scint3
     scint3 = true;
-    rep = rep | (0x1<<2);
+    rep = rep | (0x1<<2);                    //allocate the value 1 to the first digit
   }
 
   double D2 = cfg.d1+cfg.d1_2+(cfg.d2)/2;
   double x_2 = track.GetPosAtY(-D2).X();
   if (x_2>=(cfg.W13-cfg.W2)/2 && x_2 <=(cfg.W13+cfg.W2)/2){
     scint2 = true;
-    rep = rep | (0x1<<1);
+    rep = rep | (0x1<<1);                  //allocate the value 1 to the second digit
   }
   
   double x_1 = track.GetPosAtY(-cfg.d1/2).X();
   if (x_1>=0 && x_1<=cfg.W13){
     scint1 = true; 
-    rep = rep | 0x1;
+    rep = rep | 0x1;                      //allocate the value 1 to the third digit
   }
-
   cout<<"scint 3 ="<<scint3<<" ";
   cout<<"scint 2 ="<<scint2<<" ";
   cout<<"scint 1 ="<<scint1<<" ";
-
+  cout<<"rep = "<<rep<<" ";
   return rep;
 }
 
-/* Function that will first check if the muon hits the absorber, then generates a random value, compares it to the stopping power and determine if an electron is generated or not
+
+
+/* Function that will first get the position of the muon at the altitude of the absorber, then generates a random value, compares it to the stopping power and determine if the muon is absorbed or not.
  */
 bool is_absorbed(Track track, Config cfg){
   double Da = cfg.d1+cfg.d1_2+cfg.d2+cfg.d2_a+(cfg.thickness/2);
   double x_a = track.GetPosAtY(-Da).X();
+  //cout<<"x_a = "<<x_a<<" ";
   bool abs = false;
-  if (x_a>=0 && x_a<=cfg.W13){
-    abs = true;
-  }
-  //condition of stopped muon 
+  TRandom r;
+  //reference_pstop is that of 2.5 cm of copper (from Amsler)
+  /* float reference_pstop=1e-2; */
+  /* float pstop=reference_pstop*thickness*dedx*rho/(2.5*1.4*8.9);  */
+  float p_absorb_per_MeV=0.01/10; // 1%/10MeV 
+  //float p_absorb_per_MeV=0.024/10; // 2.4%/10MeV
+  //cout<<"dedx , rho , pabs = "<<cfg.dedx<<" , "<<cfg.rho<<" , "<<p_absorb_per_MeV<<" "; 
+  float stop=cfg.dedx*cfg.rho*p_absorb_per_MeV;
+  //cout<<"stop = "<<stop<<" ";
+  double a = r.Uniform(0,1);
+  //cout<<"a = "<<a<<" ";
+  abs = (x_a>=0 && x_a<=cfg.W13) && a<=stop;
+
   return abs;
+}
+
+enum particletype{muon,electron};
+
+/* Function that first get the pattern of the track, and returns a string depending on the trigger pattern and on the particle considered.
+ */
+string analyse_track(Track track, Config cfg, particletype particle){
+  string s = "";
+  int pattern = get_pattern(track,cfg);
+  switch(particle){
+ 
+  case (muon){
+    if(pattern == 3){                     //if the muon hits scint 1 and 2 but will not hit scint3
+      if(is_absorbed(track,cfg)){
+	s = "signal";                    
+      }
+      else { 
+	s = "bkg";
+      }
+    }
+    else{
+      if(pattern == 7){                   //if the muon hits scint 1 and 2 and is going to hit scint3
+	if(is_absorbed(track,cfg)){
+	  s = "signal";
+	}
+	else {
+	  s = "false";
+	}
+      }
+      else {                        //in any other cases
+	s = "false";
+      }
+    }
+    break;
+  }
+
+  case(electron){
+    double theta_ele = track.GetDir();
+    if((theta_ele>=-2*3.1416 && theta_ele<=-3.1416) || (theta_ele>=3.1416 && theta_ele<=2-3.1416)){         //if the electron is not downgoing
+      if ((pattern == 3) || (pattern == 7)){
+      s = "signal"
+      }
+      else {
+	s = "false";
+      }
+    }
+    else {
+      s = "false";
+    }
+    break;  
+  }
+  default :
+    cout<<"particle must be muon or electron"<<endl;
+  }
+  cout<<"result is : "<<s<<endl;
+  return s;
 }
 
 bool check_muon(double mu_pos, double theta, Config cfg, targettype target){
@@ -506,10 +576,7 @@ bool check_muon(double mu_pos, double theta, Config cfg, targettype target){
 void test(double x, double y, double theta){
   Track t(x,y,theta);
   Config cfg("Cu",1);
-  int rep = get_pattern(t,cfg);
-  if(check_muon(x,theta,cfg,scint2)) cout<<"check2 = true "<<endl;
-  if(check_muon(x,theta,cfg,scint3)) cout<<"check3 = true "<<endl;
-  if(check_muon(x,theta,cfg,absor)) cout<<"checka = true "<<endl;
+  string rep = analyse_track(t,cfg);
 }
 
 
