@@ -238,6 +238,20 @@ double toyfit(int nsig, float B, float nbkg, float alpha, float tauminus, fittyp
   return f->GetParError(3);
 }
 
+//distribution of the muon time
+double generate_mu_time(TRandom *r){
+  bool missed = true;
+  double delta_t = pow(10,-6);      //delta_t = 10 micro seconds
+  double nu = 5;                   //nu = 5 Hz
+  double mu_time;
+  while(missed){
+    mu_time = r->Uniform(0,delta_t);
+    double p = r->Uniform(0,nu);
+    if (nu*exp(-mu_time*nu) < p) missed = false;
+  }
+  return mu_time;
+}
+
 //distribution of the muon angle of incidence
 double generate_mu_costheta(TRandom *r){
   bool missed=true;
@@ -295,6 +309,46 @@ TH1F* h_ele_e(int nentries){
     h->Fill(ele_energy(r));
   return h;
 }
+/* Class Data Acquisition, containing an histogram of the events, the interval of the gate considered and a start value */
+class DAQ{
+ public :
+  DAQ(float gate, float start);
+  ~DAQ(){};
+  void Trigger(float time);
+  void SetStart(float time);
+  TH1F* GetHist();
+  float GetStart();
+ private :
+  TH1F* hist_events;
+  float gate_width;          //time window in microseconds
+  float start_time;          //last time the system triggered, in microseconds
+};
+
+DAQ::DAQ(float gate, float start){
+  hist_events = new TH1F("time_events","time",100,0,1e-04); 
+  gate_width = gate;	   
+  start_time = start;   	
+}
+TH1F* DAQ::GetHist(){
+  return hist_events;
+}
+float DAQ::GetStart(){
+  return start_time;
+}
+void DAQ::SetStart(float time){
+  start_time = time;
+}
+/*The function Trigger(float time) is called when a muon or electrons is generated with a trigger pattern. It compares the time of this new trigger with the latest time stored and if the time difference is within the gate, it fills the histogram. */
+void DAQ::Trigger(float t){
+  if ((t-start_time)<=gate_width){       //if the new trigger is within the time window
+    hist_events->Fill(t);                //the trigger is considered as the stop trigger of the start trigger already stored
+    cout<<"condition satisfied"<<endl;
+  } 
+  else {cout<<"condition unsatisfied"<<endl;} 
+  SetStart(t);
+  //cout<<"start_time = "<<start_time<<endl;
+}
+
 
 /* Class that gathers information about the particle trajectory.
 It contains the function GetPosAtY(y) which find the position of the particle at a given Y coordinate.
@@ -572,13 +626,6 @@ bool check_muon(double mu_pos, double theta, Config cfg, targettype target){
 }
 
 
-/* void test(double x, double y, double theta){ */
-/*   Track t(x,y,theta); */
-/*   Config cfg("Cu",1); */
-/*   string rep = analyse_track(t,cfg); */
-/* } */
-
-
 /* Function checking if the electron, given its position, angle and the configuration of the experiment, is likely to hit : 
 - scintillator 1 
 - scintillator 2
@@ -782,13 +829,14 @@ TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W
   TRandom r;
   TH1F* h = new TH1F("e_ele","ele energy",100,0,52.8);
   double n_bkg = 0;
+  double time_temp = 0;
+  DAQ daq(1e-05,0);
   /* testing numbers*/
   double n_mu_abs = 0;    //number of signal candidates for the muons
   double n_sig_cand_ele = 0;    //number of signal candidates for the electrons
   double n_ele_stopped = 0;    //number of electrons stopped in the absorber
   double n_ele_escaped = 0;    //number of electrons that went out of the absorber 
-  double tbna = 0;
-  double fana = 0; 
+  double tbna = 0; 
 
   for (int i=0;i<nmu;i++){
     //muon position and angle at the top of scintillator 1, between 0 and W13
@@ -801,6 +849,9 @@ TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W
     string s_mu = analyse_track(mu_track,cfg,muon,r);
     if (s_mu == "signal"){    //is a signal candidate
       n_mu_abs++;
+      double mu_time = time_temp+generate_mu_time(&r);
+      cout<<"mu_time abs = "<<mu_time<<endl;
+      daq.Trigger(mu_time);
       //generate the direction of the muon spin
       float mu_costheta = cos(mu_theta);
       TVector3 vmu(0,0,1); 
@@ -824,6 +875,7 @@ TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W
       string s_ele = analyse_track(ele_track,cfg,electron,r);
       if (s_ele == "signal"){
 	n_sig_cand_ele++;
+	double ele_time = mu_time+1e-06;
 	//length travelled by the electron to exit the slab
 	double l=(thickness-ele_y)/vele.CosTheta();
 	//energy lost by electron
@@ -835,21 +887,21 @@ TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W
 	  continue;
 	}
 	h->Fill(eleE);
+	daq.Trigger(ele_time);
+	time_temp = mu_time;
       }
       else{
 	n_ele_escaped++;
 	n_bkg++;
       }
     }
-    if (s_mu == "bkg"){
-      n_bkg++;
-    }
     if (s_mu == "011nonabsorbed"){
+      double mu_time = time_temp+generate_mu_time(&r);
+      time_temp = mu_time;
+      cout<<"mu_time non abs = "<<mu_time<<endl;
+      daq.Trigger(mu_time);
       n_bkg++;
       tbna++;
-    }
-    if (s_mu == "111nonabsorbed"){
-      fana++;
     }
   }
 /* discard downgoing electrons and electrons stopped in the absorber
@@ -858,18 +910,19 @@ TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W
    n_bkg++;
    continue;
    }*/
-  h->Draw();
+  TH1F* hist = daq.GetHist();
+  hist->Draw(); 
+  //h->Draw();
   //cout<<h->GetEntries()<<endl;
   double nele=h->GetEntries();
   /* display of the testing numbers*/
-  cout<<"muon absorbed = "<<n_mu_abs<<" / ";
-  cout<<"muon true but non absorbed = "<<tbna<<" / ";
-  cout<<"false and non absorbed = "<<fana<<" / ";
-  cout<<"electron signal candidates = "<<n_sig_cand_ele<<" / ";
-  cout<<"bkg = "<<n_bkg<<" / ";
+  cout<<"muons absorbed = "<<n_mu_abs<<" / ";
+  cout<<"muons with trigger pattern but non absorbed = "<<tbna<<" / ";
+  cout<<"electron with trigger pattern = "<<n_sig_cand_ele<<" / ";
+  cout<<"bkg triggers = "<<n_bkg<<" / ";
   cout<<"electrons stopped = "<<n_ele_stopped<<" / ";
   cout<<"electrons escaped = "<<n_ele_escaped<<" / ";
-  cout<<"true muons = "<<nele<<" ";
+  cout<<"signal events = "<<nele<<" ";
   //printf("fraction of good events %2.2f/%d = %2.2f%% \n",nele,nmu,nele/nmu*100);
   res.Set(nele,n_bkg);
   return res;
@@ -889,8 +942,8 @@ double toy(double nweeks, double B, double nbkg, double alpha, char *absorber, f
   float nmu=time*murate;//muons in the acceptance. 
   /* 7 Hz rate is an estimate from Amsler assuming rescaling their rate 
      for muons to an area of 60cm x 60cm area */
-  float nele= generate_nsig_nbkg(nmu,absorber,thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
-  
+  //float nele= generate_nsig_nbkg(nmu,absorber,thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
+  float nele= generate_nsig_nbkg2(nmu,absorber,thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
   double gm2err=toyfit(nele,B,nbkg,alpha,cfg.tauminus,cfg.ifit);
   cout<<"nele ="<<nele<<endl;
   cout<<"gm2err = "<<gm2err<<endl;  
@@ -913,10 +966,12 @@ void tables(char* absorber="Cu", double W2=50, double d2_3=3){
   float nmu=time*7;//muons in the acceptance. 
   /* 7 Hz rate is an estimate from Amsler assuming rescaling their rate 
      for muons to an area of 60cm x 60cm area */
-  float ns_nom= generate_nsig_nbkg(nmu,absorber,cfg.thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
+  //float ns_nom= generate_nsig_nbkg(nmu,absorber,cfg.thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
+  float ns_nom= generate_nsig_nbkg2(nmu,absorber,cfg.thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
   cout<<" nominal number of signal events in "<<ndays<<" days = "<<ns_nom<<endl;
   //float nb_nom=1e3*nweeks; // nominal number of background events (guess)
-  float nb_nom=generate_nsig_nbkg(nmu,absorber,cfg.thickness,cfg.W2,cfg.d2_3).Y();
+  //float nb_nom=generate_nsig_nbkg(nmu,absorber,cfg.thickness,cfg.W2,cfg.d2_3).Y();
+  float nb_nom=generate_nsig_nbkg2(nmu,absorber,cfg.thickness,cfg.W2,cfg.d2_3).Y();
   /*
     second: generate the distribution of the time differences
     for a given value of B field, background fractoin, measured asymmetry,
@@ -968,34 +1023,34 @@ void tables(char* absorber="Cu", double W2=50, double d2_3=3){
     gm2err_Bsigma[i]=toyfit(ns_nom,B_nom,nb_nom,alpha_nom,cfg.tauminus,cfg.ifit,DeltaB);
   }
 
-  /*
+  
   //scintillator 2 width dependency
   double scint2_width[20] = {2.5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40,42.5,45,47.5,50,55};
-  double eff_width[20];
+  /*double eff_width[20];
   for (int i=0;i<20;i++){
     float nsig= generate_nsig_nbkg(nmu,absorber,cfg.thickness,scint2_width[i],d2_3).X() ;//nominal number of signal events; 
     eff_width[i]=nsig/nmu;
-  }
+    }*/
   double frac_bkg[20];
   for(int i=0;i<20;i++){
-    float nbkg = generate_nsig_nbkg(nmu,absorber,cfg.thickness,scint2_width[i],d2_3).Y() ;
+    float nbkg = generate_nsig_nbkg2(nmu,absorber,cfg.thickness,scint2_width[i],d2_3).Y() ;
     frac_bkg[i] = nbkg/nmu;
  }
- 
+  
   //d2_3 depedency
   double scint_gap[20] = {0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10};
-  double eff_gap[20];
+  /*double eff_gap[20];
   for(int i=0;i<20;i++){
    float nsig= generate_nsig_nbkg(nmu,absorber,cfg.thickness,W2,scint_gap[i]).X() ;
    eff_gap[i] = nsig/nmu;
-   }
+   }*/
   double bkg_gap[20];
   for(int i=0;i<20;i++){
-   float nbkg= generate_nsig_nbkg(nmu,absorber,cfg.thickness,W2,scint_gap[i]).Y() ;
+   float nbkg= generate_nsig_nbkg2(nmu,absorber,cfg.thickness,W2,scint_gap[i]).Y() ;
    bkg_gap[i] = nbkg/nmu;
    }
 
-
+  /*
   double scint2_width1[31] = {20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50};
   double gm2err_W2[31];  
   for (int i=0;i<31;i++){
@@ -1051,22 +1106,22 @@ void tables(char* absorber="Cu", double W2=50, double d2_3=3){
   cout<<"Detection_efficiency_vs_W2_"<<absorber<<endl;
   for (int i=0;i<20;i++)
     cout<<scint2_width[i]<<"\t"<<eff_width[i]<<endl;
-
+  */
   cout<<endl;
   cout<<"Background_frac_vs_W2_"<<absorber<<endl;
   for (int i=0;i<20;i++)
     cout<<scint2_width[i]<<"\t"<<frac_bkg[i]<<endl;  
-
+  /*
   cout<<endl;
   cout<<"Detection_efficiency_vs_d2_3_"<<absorber<<endl;
   for (int i=0;i<20;i++)
     cout<<scint_gap[i]<<"\t"<<eff_gap[i]<<endl;
-
+  */
   cout<<endl;
   cout<<"Background_frac_vs_d2_3_"<<absorber<<endl;
   for (int i=0;i<20;i++)
     cout<<scint_gap[i]<<"\t"<<bkg_gap[i]<<endl;
-
+  /*
   cout<<endl;
   cout<<"W2 g-2_error_vs_W2_"<<absorber<<endl;
   for (int i=0;i<31;i++)
