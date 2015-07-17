@@ -992,7 +992,7 @@ void tables(char* absorber="Cu", double W2=50, double d2_3=3){
   float nweeks=1;
   float ndays=nweeks*7;
   float time=ndays*24*3600;//in seconds
-  float nmu=time/7;//muons in the acceptance. 
+  float nmu=time*7;//muons in the acceptance. 
   /* 7 Hz rate is an estimate from Amsler assuming rescaling their rate 
      for muons to an area of 60cm x 60cm area */
   //float ns_nom= generate_nsig_nbkg(nmu,absorber,cfg.thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
