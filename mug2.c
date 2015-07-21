@@ -253,9 +253,10 @@ double generate_mu_time(TRandom *r){
   return mu_time;
 }
 
+//ditribution of the electron trigger time
 double generate_ele_time(double mu_time, TRandom *r){
   double ele_time;
-  double p = r->Uniform(5e-06,9e-06);
+  double p = r->Uniform(5e-06,9e-06);   // the electron will trigger the system 5 to 9 ns after the muon trigger
   ele_time = mu_time+p;
   return ele_time;
 }
@@ -323,7 +324,7 @@ enum particletype{muon,electron};
 /* Class Data Acquisition, containing an histogram of the events, the interval of the gate considered, a start value and the number of interferences */
 class DAQ{
  public :
-  DAQ(float gate, float start);
+  DAQ(float gate, float start, double n_muons);
   ~DAQ(){};
   void Trigger(float time, particletype particle, double last_ele_time);
   void SetStart(float time);
@@ -338,8 +339,8 @@ private :
   float n_interferences;     //number of times when a muon interfered with the DAQ
 };
 
-DAQ::DAQ(float gate, float start){
-  hist_events = new TH1F("time_events","time",100,0,0.1); 
+DAQ::DAQ(float gate, float start, double n_muons){
+  hist_events = new TH1F("time_events","trigger time distribution",100,0,(0.07*n_muons)/10000); 
   gate_width = gate;	   
   start_time = start;
   n_interferences = 0;   	
@@ -364,9 +365,9 @@ void DAQ::SetInter(float n){
 void DAQ::Trigger(float t, particletype particle, double last_ele_time){
  switch(particle){
   case muon: {
-    if ((t-GetStart())<=gate_width && t<last_ele_time){       //if the new trigger is within the time window           
+    if ((t-GetStart())<=gate_width && t<last_ele_time){       //if the new trigger is within the time window and happens before the electron triggers           
       GetHist()->Fill(t);           //the trigger is considered as the stop trigger of the start trigger already stored
-      SetInter(GetInter()+1);
+      SetInter(GetInter()+1);       //the muon interferes with the last measure
       //cout<<"muon interfering at t = "<<t<<endl;
     }  
     SetStart(t);
@@ -854,8 +855,8 @@ TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W
   TH1F* h = new TH1F("e_ele","ele energy",100,0,52.8);
   //daq initialization
   double time_temp = 0;
-  double last_ele_time = 1.;     
-  DAQ daq(1e-05,0);
+  double last_ele_time = 0;     
+  DAQ daq(1e-05,0,nmu);
   /* testing numbers*/
   double n_mu_abs = 0;         //number of muons with trigger pattern and absorbed
   double n_mu_nonabs = 0;      //number of muons with trigger pattern but non absorbed
@@ -905,7 +906,7 @@ TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W
 	//energy lost by electron
 	double deltaE=l*cfg.rho*cfg.dedx;
 	double eleE=ele_energy(&r);
-	if (eleE<deltaE){              
+	if (eleE<deltaE || vele.CosTheta()>0){              
 	  n_bkg++;
 	  n_ele_stopped++;
 	  continue;
@@ -915,7 +916,7 @@ TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W
 	last_ele_time = ele_time; 
 	//cout<<"an electron triggered the system"<<endl;      
       }
-      else{          //if the electron do not have a trigger pattern
+      else{          //if the electron does not have a trigger pattern
 	n_ele_escaped++;
 	n_bkg++;
       }
@@ -928,18 +929,12 @@ TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W
     }
     time_temp = mu_time;       //storage of the muon trigger time
   }
-/* discard downgoing electrons and electrons stopped in the absorber          (not sure if the code already do that or not)
-   if (vele.CosTheta()<0) {
-   //n_ele_stopped1++;
-   n_bkg++;
-   continue;
-   }*/
   TH1F* hist = daq.GetHist();
-  //hist->Draw(); 
+  hist->Draw(); 
   double n_coincidences = hist->GetEntries();     //total number of time coincidences
   float n_interferences = daq.GetInter();         //number of interferences
   n_bkg = n_bkg+n_interferences;
-  h->Draw();
+  //h->Draw();
   //cout<<h->GetEntries()<<endl;
   double nele=h->GetEntries();
   /* display of the testing numbers*/
