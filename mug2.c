@@ -240,15 +240,18 @@ double toyfit(int nsig, float B, float nbkg, float alpha, float tauminus, fittyp
 
 //distribution of the muon time
 double generate_mu_time(TRandom *r){
-  bool missed = true;
-  double delta_t = 1e-05;      //delta_t = 10 micro seconds
   double nu = 5;                   //nu = 5 Hz
   double mu_time;
-  while(missed){
+  /*
+bool missed = true;
+double delta_t = 1e-05;      //delta_t = 10 micro seconds
+  double p = r->Uniform(0,nu);
+ while(missed){
     mu_time = r->Uniform(0,delta_t);
-    double p = r->Uniform(0,nu);
-    if (nu*exp(-mu_time*nu) < p) missed = false;
+     if (nu*exp(-mu_time*nu) < p) missed = false;
   }
+*/
+  mu_time=r->Exp(1./nu);
   //cout<<"mu_time_generated = "<<mu_time<<endl;
   return mu_time;
 }
@@ -296,6 +299,21 @@ double generate_ele_costheta(TRandom *r){
   }
   return costheta;  
 }
+double generate_ele_theta(TRandom *r){
+  bool missed=true;
+  double costheta;
+  while (missed){
+    costheta=r->Uniform(0,1);
+    //this is the costheta distribution
+    double y=(1+1./3*costheta), ymax=1+1./3;
+    double p=r->Uniform(0,ymax);
+    if (p<y) missed=false;
+  }
+  double ele_theta = acos(costheta);
+  if(ele_theta>0) ele_theta = 3.1416+ele_theta ;
+  if(ele_theta<=0) ele_theta = -3.1416+ele_theta;
+  return ele_theta;
+}
 
 //electron energy spectrum
 double ele_energy(TRandom *r){
@@ -310,6 +328,16 @@ double ele_energy(TRandom *r){
   }
   return energy;
 }
+
+TVector3 generate_vele(float mu_theta, float ele_theta, TRandom r){
+  TVector3 vmu(0,0,1); 
+  vmu.RotateX(mu_theta);
+  TVector3 vele(vmu);      
+  float ele_phi = r.Uniform(-3.1416,3.1416);
+  vele.RotateX(ele_theta);
+  vele.Rotate(ele_phi,vmu);
+  return vele;
+} 
 
 TH1F* h_ele_e(int nentries){
   TH1F* h = new TH1F("e_ele","generated electron energy spectrum",100,0,52.8);
@@ -326,64 +354,95 @@ class DAQ{
  public :
   DAQ(float gate, float start, double n_muons);
   ~DAQ(){};
-  void Trigger(float time, particletype particle, double last_ele_time);
-  void SetStart(float time);
+  void SaveInterval(float current_time, particletype particle);
+  void SetStart(float time, particletype particle);
   TH1F* GetHist();
+  TH1F* GetSigHist();
+  TH1F* GetBkgHist();
   float GetStart();
   float GetInter();
-  void SetInter(float n); 
+  void AddInterference(); 
 private :
   TH1F* hist_events;         //histogram of trigger time
+  TH1F* sig_hist;            //histogram of the true coincidences
+  TH1F* bkg_hist;            //histogram of the background interferences
   float gate_width;          //time window in microseconds
   float start_time;          //last time the system triggered, in microseconds
   float n_interferences;     //number of times when a muon interfered with the DAQ
+  particletype start_particle;
 };
 
 DAQ::DAQ(float gate, float start, double n_muons){
-  hist_events = new TH1F("time_events","trigger time distribution",100,0,(0.07*n_muons)/10000); 
+  hist_events = new TH1F("time_events","trigger time distribution",100,0,(0.00001*n_muons)/10000); 
+  sig_hist = new TH1F("time_signals","true coincidences",100,0,(0.00001*n_muons)/10000); 
+  bkg_hist = new TH1F("time_bkg","interferences",100,0,(0.00001*n_muons)/10000); 
   gate_width = gate;	   
   start_time = start;
-  n_interferences = 0;   	
+  n_interferences = 0;
+  start_particle = muon;   	
 }
 TH1F* DAQ::GetHist(){
   return hist_events;
 }
+TH1F* DAQ::GetSigHist(){
+  return sig_hist;
+}
+TH1F* DAQ::GetBkgHist(){
+  return bkg_hist;
+}
 float DAQ::GetStart(){
   return start_time;
 }
-void DAQ::SetStart(float time){
+void DAQ::SetStart(float time, particletype particle){
   start_time = time;
+  start_particle = particle;
 }
 float DAQ::GetInter(){
   return n_interferences;
 }
-void DAQ::SetInter(float n){
-  n_interferences = n;
+void DAQ::AddInterference(){
+  n_interferences++;
 }
 
 /*Function called when a muon or electrons is generated with a trigger pattern. It compares the time of this new trigger with the latest time stored and if the time difference is within the gate, it fills the histogram. */
-void DAQ::Trigger(float t, particletype particle, double last_ele_time){
- switch(particle){
-  case muon: {
-    if ((t-GetStart())<=gate_width && t<last_ele_time){       //if the new trigger is within the time window and happens before the electron triggers           
-      GetHist()->Fill(t);           //the trigger is considered as the stop trigger of the start trigger already stored
-      SetInter(GetInter()+1);       //the muon interferes with the last measure
-      //cout<<"muon interfering at t = "<<t<<endl;
-    }  
-    SetStart(t);
-    break;
+/* void DAQ::Trigger(float t, particletype particle, double last_ele_time){ */
+/*  switch(particle){ */
+/*   case muon: { */
+/*     if ((t-GetStart())<=gate_width && t<last_ele_time){       //if the new trigger is within the time window and happens before the electron triggers            */
+/*       GetHist()->Fill(t);           //the trigger is considered as the stop trigger of the start trigger already stored */
+/*       SetInter(GetInter()+1);       //the muon interferes with the last measure */
+/*       //cout<<"muon interfering at t = "<<t<<endl; */
+/*     }   */
+/*     SetStart(t); */
+/*     break; */
+/*   } */
+/*  case electron: { */
+/*    if ((t-start_time)<=gate_width){ */
+/*      GetHist()->Fill(t); */
+/*      //cout<<"electron stopping acquisition at time = "<<t<<endl; */
+/*    } */
+/*    break;  */
+/*  } */
+/*  default : */
+/*    cout<<"particle must be muon or electron"<<endl;   */
+/*  } */
+/* //cout<<"start_time = "<<start_time<<endl; */
+/* } */
+
+void DAQ::SaveInterval(float current_time, particletype particle){
+  float elapsed_time = current_time - start_time;
+  if ( elapsed_time < gate_width){
+    //record time interval
+    GetHist()->Fill(elapsed_time);
+    //check if its' a good signal
+    if ((particle==electron) && (start_particle==muon))
+      GetSigHist()->Fill(elapsed_time);
+    else{  
+      AddInterference();
+      GetBkgHist()->Fill(elapsed_time);
+    }
   }
- case electron: {
-   if ((t-start_time)<=gate_width){
-     GetHist()->Fill(t);
-     //cout<<"electron stopping acquisition at time = "<<t<<endl;
-   }
-   break; 
- }
- default :
-   cout<<"particle must be muon or electron"<<endl;  
- }
-//cout<<"start_time = "<<start_time<<endl;
+  SetStart(current_time,particle);
 }
 
 
@@ -392,18 +451,21 @@ It contains the function GetPosAtY(y) which find the position of the particle at
  */
 class Track{
  public:
-  Track(double x, double y, double theta);
+  Track(double x, double y, double theta, double trigger_time);
   ~Track(){};
   TVector2 GetPosAtY(double y);
   TVector2 GetPos();
   double GetDir();
+  double GetTime();
  private:
   TVector2 pos;
   double theta;
+  double time; 
 };
-Track::Track(double x, double y, double angle){  
+Track::Track(double x, double y, double angle, double trigger_time){  
   pos.Set(x,y);
   theta = angle;
+  time = trigger_time;
 }
 TVector2 Track::GetPosAtY(double y){
   TVector2 pos_ini = pos;
@@ -417,14 +479,19 @@ TVector2 Track::GetPos(){
 double Track::GetDir(){
   return theta;
 }
+double Track::GetTime(){
+  return time;
+}
 
 /* Class that gathers the scintillators and the absorber parameters. For now only one geometry is implemented, but more can be added if necessary.
  */
+enum  geometrytype{nominal};
 
 class Config{
  public:
   Config(char *absorber,int geometry);
   ~Config(){};
+  double GetD1a();
   double dedx;
   double rho;
   double tauminus;//mus
@@ -476,7 +543,7 @@ Config::Config(char *absorber, int geometry){
     thickness=2.5*8.9*1.4/rho/dedx;
     ifit=single_exp;
   }
-  if (geometry == 1){
+  if (geometry == nominal){
     W13 = 50;       //width of scintillators 1 and 3[cm]
     W2 = 50;       //width of scintillator 2[cm]
     d1 = 1;       //thickness of scintillator 1 [cm]
@@ -485,6 +552,10 @@ Config::Config(char *absorber, int geometry){
     d2_3 = 3;    //distance between scintillators 2 and 3
     d2_a = 0.25;    // distance between scintillator 2 and the absorber
   }
+}
+
+double Config::GetD1a(){
+  return d1+d2+d1_2+d2_a;
 }
 
 enum targettype{scint1,scint2,absor,scint3};
@@ -546,7 +617,7 @@ bool is_absorbed(Track track, Config cfg, TRandom *r){
 
 /* Function that first get the pattern of the track, and returns a string depending on the trigger pattern and on the particle considered.
  */
-string analyse_track(Track track, Config cfg, particletype particle,TRandom r){
+string swim_track(Track track, Config cfg, particletype particle,TRandom r){
   string s = "";
   int pattern = get_pattern(track,cfg);
   switch(particle){
@@ -844,18 +915,12 @@ string analyse_track(Track track, Config cfg, particletype particle,TRandom r){
 
 
 //last version of this function
-TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W2, double d2_3){
+TVector2 generate_nsig_nbkg2(int nmu, Config cfg){
   TVector2 res(0,0);
-  //geometry configuration
-  Config cfg(absorber,1);
-  cfg.W2 = W2;
-  cfg.d2_3 = d2_3;
-  double d = cfg.d1+cfg.d2+cfg.d1_2+cfg.d2_a;
   TRandom r;
   TH1F* h = new TH1F("e_ele","ele energy",100,0,52.8);
   //daq initialization
-  double time_temp = 0;
-  double last_ele_time = 0;     
+  double time_temp = 0;     
   DAQ daq(1e-05,0,nmu);
   /* testing numbers*/
   double n_mu_abs = 0;         //number of muons with trigger pattern and absorbed
@@ -866,76 +931,68 @@ TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W
   double n_bkg = 0;            //number of background triggers
 
   for (int i=0;i<nmu;i++){
-    //muon position, angle and time 
-    double mu_x = generate_mu_position(&r,cfg.W13);    //x between 0 and W13
-    double mu_y = 0.;
+    //muon position, angle and time, stored in the muon track 
     int b = floor(r.Uniform(0,10));
-    double mu_theta = pow(-1,b)*acos(generate_mu_costheta(&r));  //theta can be either positive or negative
-    //cout<<"muon x,y,theta : "<<mu_x<<","<<mu_y<<","<<mu_theta<<" // ";
-    Track mu_track(mu_x,mu_y,mu_theta);
-    string s_mu = analyse_track(mu_track,cfg,muon,r);
-    double mu_time = time_temp+generate_mu_time(&r);
-    if (s_mu == "signal"){    //if the muon has a trigger pattern and is absorbed
+    Track mu_track(generate_mu_position(&r,cfg.W13) , 0 , pow(-1,b)*acos(generate_mu_costheta(&r)) , time_temp+generate_mu_time(&r));
+    string s_mu = swim_track(mu_track,cfg,muon,r);
+
+    if (s_mu == "signal"){    
+      //the muon has a trigger pattern and is absorbed
       n_mu_abs++;       
-      //cout<<"mu_time abs = "<<mu_time<<endl;
-      daq.Trigger(mu_time,muon,last_ele_time);    //beginning of the acquisition with start_time = mu_time
-      //cout<<"an absorbed muon triggered the system"<<endl;
-      //generate the direction of the muon spin
-      float mu_costheta = cos(mu_theta);
-      TVector3 vmu(0,0,1); 
-      vmu.RotateX(acos(mu_costheta));
-      //generate direction of the electron momentum         
-      float ele_costheta=generate_ele_costheta(&r);
-      float ele_phi=r.Uniform(-3.1416,3.1416);
-      TVector3 vele(vmu);
-      float ele_theta = acos(ele_costheta);
-      if(ele_theta>0) ele_theta = 3.1416+ele_theta ;
-      if(ele_theta<=0) ele_theta = -3.1416+ele_theta;
-      vele.RotateX(ele_theta);
-      vele.Rotate(ele_phi,vmu);
-      //generate the position where the muon has stopped and the angle of the electron
-      float ele_y=-d-r.Uniform(0,thickness);
-      float ele_x = mu_x+(d+ele_y)*tan(mu_theta);
-      Track ele_track(ele_x,ele_y,ele_theta);
-      string s_ele = analyse_track(ele_track,cfg,electron,r);
-      if (s_ele == "signal"){         //the electron has a trigger pattern
+      //beginning of the acquisition
+      daq.SaveInterval(mu_track.GetTime(),muon); 
+      //generate the position where the muon has stopped, the angle and the time of the electron, all stored into the electron track 
+      float ele_theta = generate_ele_theta(&r);
+      TVector3 vele = generate_vele(mu_track.GetDir(),ele_theta,r);
+      double ele_y = -cfg.GetD1a()-r.Uniform(0,cfg.thickness);
+      Track ele_track(mu_track.GetPos().X()+(cfg.GetD1a()+ele_y)*tan(mu_track.GetDir()),ele_y,ele_theta, generate_ele_time(mu_track.GetTime(), &r));
+      string s_ele = swim_track(ele_track,cfg,electron,r);
+ 
+      if (s_ele == "signal"){        
+	//the electron has a trigger pattern
 	n_sig_cand_ele++;
-	double ele_time = generate_ele_time(mu_time, &r);     //possible electron trigger --> trigger time is generated (VALUE HAS TO BE CHANGED)
 	//length travelled by the electron to exit the slab
-	double l=(thickness-ele_y)/vele.CosTheta();
+	double l=(cfg.thickness-ele_track.GetPos().Y())/vele.CosTheta();
 	//energy lost by electron
 	double deltaE=l*cfg.rho*cfg.dedx;
 	double eleE=ele_energy(&r);
-	if (eleE<deltaE || vele.CosTheta()>0){              
+
+	if (eleE<deltaE || vele.CosTheta()>0){
+	  //the electron is stopped in the absorber              
 	  n_bkg++;
 	  n_ele_stopped++;
 	  continue;
 	}
 	h->Fill(eleE);
-	daq.Trigger(ele_time,electron,last_ele_time);      //electron is not stopped so it triggers
-	last_ele_time = ele_time; 
-	//cout<<"an electron triggered the system"<<endl;      
+	//electron is not stopped so it triggers      
+	daq.SaveInterval(ele_track.GetTime(),electron);
       }
-      else{          //if the electron does not have a trigger pattern
+
+      else{          
+	//if the electron does not have a trigger pattern
 	n_ele_escaped++;
 	n_bkg++;
       }
     }
-    if (s_mu == "011nonabsorbed"){      //if the muon has a trigger pattern but is not absorbed
-      //cout<<"mu_time non abs = "<<mu_time<<endl;
-      daq.Trigger(mu_time,muon,last_ele_time);
+
+    if (s_mu == "011nonabsorbed"){     
+      //if the muon has a trigger pattern but is not absorbed
+      daq.SaveInterval(mu_track.GetTime(),muon);
       n_bkg++;
       n_mu_nonabs++;
     }
-    time_temp = mu_time;       //storage of the muon trigger time
+    //storage of the muon trigger time
+    time_temp = mu_track.GetTime(); 
   }
-  TH1F* hist = daq.GetHist();
-  hist->Draw(); 
-  double n_coincidences = hist->GetEntries();     //total number of time coincidences
-  float n_interferences = daq.GetInter();         //number of interferences
+
+  TH1F* hist_events = daq.GetHist();
+  //hist_events->Draw(); 
+  //total number of time coincidences
+  double n_coincidences = hist_events->GetEntries();
+  //total number of interferences
+  float n_interferences = daq.GetInter();        
   n_bkg = n_bkg+n_interferences;
-  //h->Draw();
-  //cout<<h->GetEntries()<<endl;
+  h->Draw();
   double nele=h->GetEntries();
   /* display of the testing numbers*/
   cout<<"muons absorbed = "<<n_mu_abs<<" / ";
@@ -947,18 +1004,18 @@ TVector2 generate_nsig_nbkg2(int nmu, char* absorber, double thickness, double W
   cout<<"signal events = "<<nele<<" / ";
   cout<<"number of coincidences = "<<n_coincidences<<endl;
   cout<<"number of interferences = "<<n_interferences<<endl;
-  //printf("fraction of good events %2.2f/%d = %2.2f%% \n",nele,nmu,nele/nmu*100);
+
   res.Set(nele,n_bkg);
   return res;
 }
 
 
 
-double toy(double nweeks, double B, double nbkg, double alpha, char *absorber, float thickness){
+double toy(double nweeks, double B, double nbkg, double alpha, char *absorber){
   // double dedx, rho, tauminus, thickness_nom;
   //fittype ifit;
   //config(absorber,thickness_nom, dedx,rho,tauminus,ifit);
-  Config cfg(absorber,1);
+  Config cfg(absorber,nominal);
   float ndays=nweeks*7;
   float time=ndays*24*3600;//in seconds
   float surf1=50*60; //surface of scint1 in cm2
@@ -967,7 +1024,7 @@ double toy(double nweeks, double B, double nbkg, double alpha, char *absorber, f
   /* 7 Hz rate is an estimate from Amsler assuming rescaling their rate 
      for muons to an area of 60cm x 60cm area */
   //float nele= generate_nsig_nbkg(nmu,absorber,thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
-  float nele= generate_nsig_nbkg2(nmu,absorber,thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
+  float nele= generate_nsig_nbkg2(nmu,cfg).X() ;//nominal number of signal events;
   double gm2err=toyfit(nele,B,nbkg,alpha,cfg.tauminus,cfg.ifit);
   cout<<"nele ="<<nele<<endl;
   cout<<"gm2err = "<<gm2err<<endl;  
@@ -977,7 +1034,7 @@ double toy(double nweeks, double B, double nbkg, double alpha, char *absorber, f
 void tables(char* absorber="Cu", double W2=50, double d2_3=3){
   //double dedx, rho, tauminus, thickness_nom; fittype ifit;
   //config(absorber,thickness_nom, dedx,rho,tauminus,ifit);
-  Config cfg(absorber,1);
+  Config cfg(absorber,nominal);
   cfg.W2 = W2;
   cfg.d2_3 = d2_3;
   float tauplus=2.2;
@@ -991,11 +1048,13 @@ void tables(char* absorber="Cu", double W2=50, double d2_3=3){
   /* 7 Hz rate is an estimate from Amsler assuming rescaling their rate 
      for muons to an area of 60cm x 60cm area */
   //float ns_nom= generate_nsig_nbkg(nmu,absorber,cfg.thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
-  float ns_nom= generate_nsig_nbkg2(nmu,absorber,cfg.thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
+  
+  TVector2 ns_nb=generate_nsig_nbkg2(nmu,cfg) ;//nominal number of signal events;
+  float ns_nom=ns_nb.X();
   cout<<" nominal number of signal events in "<<ndays<<" days = "<<ns_nom<<endl;
   //float nb_nom=1e3*nweeks; // nominal number of background events (guess)
   //float nb_nom=generate_nsig_nbkg(nmu,absorber,cfg.thickness,cfg.W2,cfg.d2_3).Y();
-  float nb_nom=generate_nsig_nbkg2(nmu,absorber,cfg.thickness,cfg.W2,cfg.d2_3).Y();
+  float nb_nom=ns_nb.Y();
   /*
     second: generate the distribution of the time differences
     for a given value of B field, background fractoin, measured asymmetry,
@@ -1035,7 +1094,8 @@ void tables(char* absorber="Cu", double W2=50, double d2_3=3){
     0.5*(exp(-tmin/tauplus)-exp(-tmax/tauplus));
     
   for (int i=0;i<10;i++){
-    float nsig= generate_nsig_nbkg2(nmu,absorber,thickness[i],cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
+    cfg.thickness = thickness[i];
+    float nsig= generate_nsig_nbkg2(nmu,cfg).X() ;//nominal number of signal events;
     gm2err_thickness[i]=toyfit(nsig,B_nom,nb_nom,alpha_nom,cfg.tauminus,cfg.ifit);
     eff_thickness[i]=nsig/nmu*frac_fit;
   }
@@ -1157,3 +1217,58 @@ void tables(char* absorber="Cu", double W2=50, double d2_3=3){
     cout<<scint_gap[i]<<"\t"<<gm2err_d2_3[i]<<endl;
  */
 }
+
+
+/*
+21/07/15
+
+generate_nsig_nbkg2(nmu,absorber,thickness,cfg.W2,cfg.d2_3).X()
+pass the config object directly to not replicate the creation of the geometry
+inside the function. DONE
+
+
+
+   Track mu_track(mu_x1,mu_y1,mu_theta); //track should hold also the time DONE
+    string s_mu = analyse_track(mu_track,cfg,muon,r);  // this should be swim_track
+    double mu_time = time_temp+generate_mu_time(&r); // this goes before Track
+ 
+   if (s_mu == "signal"){    //if the muon has a trigger pattern and is absorbed
+      n_mu_abs++;       
+      //cout<<"mu_time abs = "<<mu_time<<endl;
+      daq.Trigger(mu_time,muon,last_ele_time);    //beginning of the acquisition with start_tim
+
+
+
+in DAQ 
+    substitute SetInter with AddInterference
+    add data member start_particle
+    set start_particle in the SetStart(time, particle) function
+    add sign_hist and bkg_hist together with GetSigHist and GetBkgHist
+    substitute Trigger with Trigger2
+    change the name to SaveInterval or SaveTimeStamp or 
+DONE
+
+in generate_nsig....
+
+
+      //generate direction of the electron momentum         
+      float ele_costheta=generate_ele_costheta(&r);
+      float ele_phi=r.Uniform(-3.1416,3.1416);
+      TVector3 vele(vmu);
+      float ele_theta = acos(ele_costheta);
+      if(ele_theta>0) ele_theta = 3.1416+ele_theta ;
+      if(ele_theta<=0) ele_theta = -3.1416+ele_theta;
+      vele.RotateX(ele_theta);
+      vele.Rotate(ele_phi,vmu);
+      //generate the position where the muon has stopped and the angle of the electron
+      float ele_y=-d-r.Uniform(0,thickness);
+      float ele_x = mu_x1+(d+ele_y)*tan(mu_theta);
+      Track ele_track(ele_x,ele_y,ele_theta);
+
+
+    move this into a function or a class that returns the electron track
+DONE
+
+
+*/
+void mug2(){}
