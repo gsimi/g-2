@@ -260,7 +260,7 @@ double delta_t = 1e-05;      //delta_t = 10 micro seconds
 //ditribution of the electron trigger time
 double generate_ele_time(double mu_time, TRandom *r){
   double ele_time;
-  double p = r->Uniform(5e-06,9e-06);   // the electron will trigger the system 5 to 9 ns after the muon trigger
+  double p = r->Uniform(5e-06,9e-06);   // the electron will trigger the system 5 to 9 micro s after the muon trigger (it will take from 0.4 to 0.7 ns to the muon to hit the absorber)
   ele_time = mu_time+p;
   return ele_time;
 }
@@ -555,6 +555,13 @@ Config::Config(char *absorber, int geometry){
     thickness=2.5*8.9*1.4/rho/dedx;
     ifit=single_exp;
   }
+  if(strcmp(absorber,"Fe")==0){
+    dedx = 1.45;
+    rho = 7.87;
+    tauminus = 0.205;//mus
+    thickness = 2.5*8.9*1.4/rho/dedx;
+    ifit = single_exp;
+  }
   if (geometry == nominal){
     W13 = 50;       //width of scintillators 1 and 3[cm]	       
     W2 = 50;       //width of scintillator 2[cm]		       
@@ -786,10 +793,10 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   hs->Add(hist_events);
   hs->Add(hist_sig);
   hs->Add(hist_bkg);
-  //hs->Draw();
+  hs->Draw();
   //test_ele_theta->Draw();
   //total number of time coincidences
-  double n_coincidences = hist_events->GetEntries();
+  //double n_coincidences = hist_events->GetEntries();
   //total number of interferences
   float n_interferences = daq.GetInter();        
   // n_bkg = n_bkg+n_interferences;
@@ -1093,7 +1100,7 @@ void mug2(){
    generate_nsig_nbkg2(0.5,cfg);
  }
   */
-  /* d2_3 dependency */
+  /* d2_3 dependency  
   double distance_scint2_scint3[13]={1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7};
   Config cfg("Cu",nominal);
   for (int i=0;i<13;i++){
@@ -1102,4 +1109,5 @@ void mug2(){
     cout<<"half-week simulation with distance between scint 2 and scint 3 = "<<distance_scint2_scint3[i]<<endl;
     generate_nsig_nbkg2(0.5,cfg);
   }
+*/
 }
