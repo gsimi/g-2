@@ -241,7 +241,8 @@ double toyfit(int nsig, float B, float nbkg, float alpha, float tauminus, fittyp
 
 //distribution of the muon time
 double generate_mu_time(TRandom *r){
-  double nu = 5;                   //nu = 5 Hz
+  //double nu = 5;                   //nu = 5 Hz
+  double nu = 50;       //according to my calculations, 50 muons hit the surface of the detectors every second
   double mu_time;
   /*
 bool missed = true;
@@ -260,8 +261,10 @@ double delta_t = 1e-05;      //delta_t = 10 micro seconds
 //ditribution of the electron trigger time
 double generate_ele_time(double mu_time, TRandom *r){
   double ele_time;
-  double p = r->Uniform(5e-06,9e-06);   // the electron will trigger the system 5 to 9 micro s after the muon trigger (it will take from 0.4 to 0.7 ns to the muon to hit the absorber)
-  ele_time = mu_time+p;
+  double f = 833350;
+  //double p = r->Uniform(5e-06,9e-06);   // the electron will trigger the system 5 to 9 micro s after the muon trigger (it will take from 0.4 to 0.7 ns to the muon to hit the absorber)
+  double p = r->Exp(1./f);
+  ele_time = mu_time+p+3e-06;
   return ele_time;
 }
 
@@ -703,7 +706,7 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   std::vector<float> res;
   TRandom r;
   TH1F* h = new TH1F("e_ele","ele energy",100,0,52.8);
-  TH1F* test_ele_theta = new TH1F("ele theta distribution","ele_theta",100,-6,6);
+  //TH1F* test_ele_x = new TH1F("ele x coordinate distribution","ele_x",100,0,60);
   //daq initialization
   double previous_mu_time = 0;     
   DAQ daq(1e-05,0);
@@ -734,12 +737,11 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
       daq.SaveInterval(mu_track.GetTime(),muon); 
       //generate the position where the muon has stopped, the angle and the time of the electron, all stored into the electron track 
       double ele_theta = generate_ele_theta(&r);
-      //double ele_costheta = generate_ele_costheta(&r);
-      test_ele_theta->Fill(ele_theta); 
+      //double ele_costheta = generate_ele_costheta(&r); 
       TVector3 vele = generate_vele(mu_track,ele_theta,r);
       double ele_y = -cfg.GetD1a()-r.Uniform(0,cfg.thickness);
       Track ele_track(mu_track.GetPos().X()+(cfg.GetD1a()+ele_y)*tan(mu_track.GetDir()),ele_y,ele_theta, generate_ele_time(mu_track.GetTime(), &r));
-      //test_eletheta->Fill(ele_track.GetDir()); 
+      //test_ele_x->Fill(ele_track.GetPos().X());
       string s_ele = swim_track(ele_track,cfg,electron,r);
  
       if (s_ele == "signal"){        
@@ -794,7 +796,7 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   hs->Add(hist_sig);
   hs->Add(hist_bkg);
   hs->Draw();
-  //test_ele_theta->Draw();
+  //test_ele_x->Draw();
   //total number of time coincidences
   //double n_coincidences = hist_events->GetEntries();
   //total number of interferences
@@ -827,6 +829,7 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   cout<<" -------------------------------------------------"<<endl;
   //cout<<"number of coincidences = "<<n_coincidences<<endl;
   cout<<"number of interferences = "<<n_interferences<<endl;
+  //cout<<"time of the last muon = "<<previous_mu_time<<" seconds"<<endl;
   
   res.push_back(nele); res.push_back(n_bkg);
   res.push_back(nmu);
@@ -1090,7 +1093,7 @@ DONE
 
 */
 void mug2(){
-  /* W2 dependency
+  /* W2 dependency 
  double scint2_width[13]={50,47.5,45,42.5,40,37.5,35,32.5,30,27.5,25,22.5,20};
  Config cfg("Cu",nominal);
  for (int i=0;i<13;i++){
@@ -1100,7 +1103,7 @@ void mug2(){
    generate_nsig_nbkg2(0.5,cfg);
  }
   */
-  /* d2_3 dependency  
+  /* d2_3 dependency */
   double distance_scint2_scint3[13]={1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7};
   Config cfg("Cu",nominal);
   for (int i=0;i<13;i++){
@@ -1109,5 +1112,5 @@ void mug2(){
     cout<<"half-week simulation with distance between scint 2 and scint 3 = "<<distance_scint2_scint3[i]<<endl;
     generate_nsig_nbkg2(0.5,cfg);
   }
-*/
+
 }
