@@ -1,4 +1,4 @@
-#include "TGraph.h"
+1;3409;0c#include "TGraph.h"
 #include <iostream>
 #include <fstream>
 #include "TH1F.h"
@@ -426,14 +426,14 @@ TH1F** phsuperimposition(){
 void stage(){
   TCanvas *c=new TCanvas("c","c",800,600);
 
-  channel ch("scint-coincid123-ph4-th60mV.dat","scint-pedestal.dat");
+  channel ch("data/scint-coincid123-ph4-th60mV.dat","data/scint-pedestal.dat");
   ch.plot(25);
   c->SaveAs("stage_pulse_shape.eps");
   c->SaveAs("stage_pulse_shape.png");
 
   c->SetLogy(1);
 
-  TH1F* h = pulseheight("scint-coincid123-ph4-th60mV.dat","./scint-pedestal.dat",minval, 165,300);
+  TH1F* h = pulseheight("data/scint-coincid123-ph4-th60mV.dat","data/scint-pedestal.dat",minval, 165,300);
   TH1F* th=(TH1F*)gROOT->FindObjectAny("th");
   th->GetXaxis()->SetTitle("time (1 unit = 0.2 ns)");
   if (th!=nullptr){
