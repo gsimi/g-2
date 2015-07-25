@@ -17,6 +17,9 @@ setup:
 
 */
 
+// global parameter
+float mytauplus=2.2e-6;
+
 //Pdf of the time difference distribution between the 
 //coincidence of the incoming mu and the produced electron
 //normalized to nsig signal events and nbkg flat background events
@@ -239,10 +242,109 @@ double toyfit(int nsig, float B, float nbkg, float alpha, float tauminus, fittyp
   return f->GetParError(3);
 }
 
+/* Class that gathers the scintillators and the absorber parameters. For now only one geometry is implemented, but more can be added if necessary.
+ */
+enum  geometrytype{nominal,experiment};
+
+class Config{
+ public:
+  Config(char *absorber,int geometry);
+  ~Config(){};
+  double GetD1a();
+  double dedx;
+  double rho;
+  double tauminus;//mus
+  double thickness;//cm
+  fittype ifit;
+  double W13;       //width of scintillators 1 and 3[cm]	       
+  double W2;	   //width of scintillator 2[cm]		       
+  double L;       //length of the scintillators			       
+  double d1;	  //thickness of scintillator 1 [cm]		       
+  double d2;	  //thickness of scintillator 2 [cm]		       
+  double d1_2;	  //distance between scintillators 1 and 2	       
+  double d2_3;	 //distance between scintillators 2 and 3	       
+  double d2_a;	    // distance between scintillator 2 and the absorber
+  double mu_rate;   //nominal comsic muon rate at sea level
+  double detection_efficiency;  //efficiency of the muon detection, will be determined by the experiment
+ private:
+};
+Config::Config(char *absorber, int geometry){
+
+  /* thickness is the default thickness of the absorber. It is
+     defined such that the energy loss in different materials is the same.
+     The absolute normalization is given by the thickness of the copper absorber
+     set so that the energy loss is 31MeV */
+
+  if (strcmp(absorber, "Cu")==0){
+    // copper
+    dedx=1.4;
+    rho=8.9;
+    tauminus=0.16;//mus
+    thickness=2.5;//cm
+    ifit=single_exp;
+  }
+  if (strcmp(absorber,"Al")==0){
+    // aluminium
+    dedx=1.6;
+    rho=2.7;
+    tauminus=0.88;//mus
+    thickness=2.5*8.9*1.4/rho/dedx;
+    ifit=double_exp;
+  }
+  if (strcmp(absorber,"Sci")==0){
+    dedx=1.03;
+    rho=2.0;
+    tauminus=2.03;//mus
+    thickness=2.5*8.9*1.4/rho/dedx;
+    ifit=double_exp;
+  }
+  if (strcmp(absorber,"Pb")==0){
+    dedx=1.12;
+    rho=11.35;
+    tauminus=75./1000.;//mus
+    thickness=2.5*8.9*1.4/rho/dedx;
+    ifit=single_exp;
+  }
+  if(strcmp(absorber,"Fe")==0){
+    dedx = 1.45;
+    rho = 7.87;
+    tauminus = 0.205;//mus
+    thickness = 2.5*8.9*1.4/rho/dedx;
+    ifit = single_exp;
+  }
+  if (geometry == nominal){
+    W13 = 50;       //width of scintillators 1 and 3[cm]	       
+    W2 = 50;       //width of scintillator 2[cm]		       
+    L = 60;       //length of the scintillators			       
+    d1 = 1;       //thickness of scintillator 1 [cm]		       
+    d2 = 1;       //thickness of scintillator 2 [cm]		       
+    d1_2 = 8;     //distance between scintillators 1 and 2	       
+    d2_3 = 3;    //distance between scintillators 2 and 3	       
+    d2_a = 0.25;    // distance between scintillator 2 and the absorber
+  }
+  if (geometry == nominal){
+    W13 = 30.5;       //width of scintillators 1 and 3[cm] MEASURE NEEDED	
+    W2 = 30.5;       //width of scintillator 2[cm]		       
+    L = 30.5;       //length of the scintillators MEASURE NEEDED		
+    d1 = 1;       //thickness of scintillator 1 [cm]		       
+    d2 = 1;       //thickness of scintillator 2 [cm]		       
+    d1_2 = 3.5;     //distance between scintillators 1 and 2	       
+    d2_3 = 3;    //distance between scintillators 2 and 3  MEASURE NEEDED	
+    d2_a = 0.25;    // distance between scintillator 2 and the absorber MEASURE NEEDED
+  }
+  mu_rate=1./60;//1 muon / square cm2 / minute
+  detection_efficiency = 1.;  //value is set to 100% for now
+}
+
+double Config::GetD1a(){
+  return d1+d2+d1_2+d2_a;
+}
+
+
 //distribution of the muon time
-double generate_mu_time(TRandom *r){
+double generate_mu_time(TRandom *r, Config cfg){
   //double nu = 5;                   //nu = 5 Hz
-  double nu = 50;       //according to my calculations, 50 muons hit the surface of the detectors every second
+  double nu = cfg.mu_rate*cfg.W13*cfg.L;  //according to my calculations, 50 muons hit the surface of the detectors every second
   double mu_time;
   /*
 bool missed = true;
@@ -261,13 +363,12 @@ double delta_t = 1e-05;      //delta_t = 10 micro seconds
 //ditribution of the electron trigger time
 double generate_ele_time(double mu_time, TRandom *r){
   double ele_time;
-  double f = 833350;
+  double tau= 2.2e-6;  // lifetime of the muon, should be a global paramter
   //double p = r->Uniform(5e-06,9e-06);   // the electron will trigger the system 5 to 9 micro s after the muon trigger (it will take from 0.4 to 0.7 ns to the muon to hit the absorber)
-  double p = r->Exp(1./f);
-  ele_time = mu_time+p+3e-06;
+  double dt = r->Exp(tau);
+  ele_time = mu_time+dt;
   return ele_time;
 }
-
 
 /* Class that gathers information about the particle trajectory.
 It contains the function GetPosAtY(y) which find the position of the particle at a given Y coordinate.
@@ -450,31 +551,6 @@ void DAQ::AddInterference(){
   n_interferences++;
 }
 
-/*Function called when a muon or electrons is generated with a trigger pattern. It compares the time of this new trigger with the latest time stored and if the time difference is within the gate, it fills the histogram. */
-/* void DAQ::Trigger(float t, particletype particle, double last_ele_time){ */
-/*  switch(particle){ */
-/*   case muon: { */
-/*     if ((t-GetStart())<=gate_width && t<last_ele_time){       //if the new trigger is within the time window and happens before the electron triggers            */
-/*       GetHist()->Fill(t);           //the trigger is considered as the stop trigger of the start trigger already stored */
-/*       SetInter(GetInter()+1);       //the muon interferes with the last measure */
-/*       //cout<<"muon interfering at t = "<<t<<endl; */
-/*     }   */
-/*     SetStart(t); */
-/*     break; */
-/*   } */
-/*  case electron: { */
-/*    if ((t-start_time)<=gate_width){ */
-/*      GetHist()->Fill(t); */
-/*      //cout<<"electron stopping acquisition at time = "<<t<<endl; */
-/*    } */
-/*    break;  */
-/*  } */
-/*  default : */
-/*    cout<<"particle must be muon or electron"<<endl;   */
-/*  } */
-/* //cout<<"start_time = "<<start_time<<endl; */
-/* } */
-
 void DAQ::SaveInterval(double current_time, particletype particle){
   double elapsed_time = current_time - start_time;
   if ( elapsed_time < gate_width){
@@ -492,94 +568,6 @@ void DAQ::SaveInterval(double current_time, particletype particle){
     }
   }
   SetStart(current_time,particle);
-}
-
-
-
-/* Class that gathers the scintillators and the absorber parameters. For now only one geometry is implemented, but more can be added if necessary.
- */
-enum  geometrytype{nominal};
-
-class Config{
- public:
-  Config(char *absorber,int geometry);
-  ~Config(){};
-  double GetD1a();
-  double dedx;
-  double rho;
-  double tauminus;//mus
-  double thickness;//cm
-  fittype ifit;
-  double W13;       //width of scintillators 1 and 3[cm]	       
-  double W2;	   //width of scintillator 2[cm]		       
-  double L;       //length of the scintillators			       
-  double d1;	  //thickness of scintillator 1 [cm]		       
-  double d2;	  //thickness of scintillator 2 [cm]		       
-  double d1_2;	  //distance between scintillators 1 and 2	       
-  double d2_3;	 //distance between scintillators 2 and 3	       
-  double d2_a;	    // distance between scintillator 2 and the absorber
-  double mu_rate;   //nominal comsic muon rate at sea level
- private:
-};
-Config::Config(char *absorber, int geometry){
-
-  /* thickness is the default thickness of the absorber. It is
-     defined such that the energy loss in different materials is the same.
-     The absolute normalization is given by the thickness of the copper absorber
-     set so that the energy loss is 31MeV */
-
-  if (strcmp(absorber, "Cu")==0){
-    // copper
-    dedx=1.4;
-    rho=8.9;
-    tauminus=0.16;//mus
-    thickness=2.5;//cm
-    ifit=single_exp;
-  }
-  if (strcmp(absorber,"Al")==0){
-    // aluminium
-    dedx=1.6;
-    rho=2.7;
-    tauminus=0.88;//mus
-    thickness=2.5*8.9*1.4/rho/dedx;
-    ifit=double_exp;
-  }
-  if (strcmp(absorber,"Sci")==0){
-    dedx=1.03;
-    rho=2.0;
-    tauminus=2.03;//mus
-    thickness=2.5*8.9*1.4/rho/dedx;
-    ifit=double_exp;
-  }
-  if (strcmp(absorber,"Pb")==0){
-    dedx=1.12;
-    rho=11.35;
-    tauminus=75./1000.;//mus
-    thickness=2.5*8.9*1.4/rho/dedx;
-    ifit=single_exp;
-  }
-  if(strcmp(absorber,"Fe")==0){
-    dedx = 1.45;
-    rho = 7.87;
-    tauminus = 0.205;//mus
-    thickness = 2.5*8.9*1.4/rho/dedx;
-    ifit = single_exp;
-  }
-  if (geometry == nominal){
-    W13 = 50;       //width of scintillators 1 and 3[cm]	       
-    W2 = 50;       //width of scintillator 2[cm]		       
-    L = 60;       //length of the scintillators			       
-    d1 = 1;       //thickness of scintillator 1 [cm]		       
-    d2 = 1;       //thickness of scintillator 2 [cm]		       
-    d1_2 = 8;     //distance between scintillators 1 and 2	       
-    d2_3 = 3;    //distance between scintillators 2 and 3	       
-    d2_a = 0.25;    // distance between scintillator 2 and the absorber
-  }
-  mu_rate=1./60;//1 muon / square cm2 / minute
-}
-
-double Config::GetD1a(){
-  return d1+d2+d1_2+d2_a;
 }
 
 enum targettype{scint1,scint2,absor,scint3};
@@ -698,15 +686,15 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   float ndays=nweeks*7;
   float time=ndays*24*3600;//in seconds
   float surf1=cfg.W13*cfg.L; //surface of scint1 in cm2
-  float nmu=time*cfg.mu_rate*surf1;//muons in the acceptance. 
-  /* 7 Hz rate is an estimate from Amsler assuming rescaling their rate 
-     for muons to an area of 60cm x 60cm area */
+  float nmu=time*cfg.mu_rate*surf1;//muons on scintillator1
+  /* a 7 Hz rate is an estimate of 12 coincidences from Amsler assuming rescaling their rate 
+     for muons to an area of 60cm x 50cm area */
   //float nele= generate_nsig_nbkg(nmu,absorber,thickness,cfg.W2,cfg.d2_3).X() ;//nominal number of signal events;
 
   std::vector<float> res;
   TRandom r;
   TH1F* h = new TH1F("e_ele","ele energy",100,0,52.8);
-  //TH1F* test_ele_x = new TH1F("ele x coordinate distribution","ele_x",100,0,60);
+  TH1F* test_ele_time = new TH1F("ele time distribution","ele_time",100,0,1e-05);
   //daq initialization
   double previous_mu_time = 0;     
   DAQ daq(1e-05,0);
@@ -723,7 +711,7 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   for (int i=0;i<nmu;i++){
     //muon position, angle and time, stored in the muon track 
     int b=r.Integer(2);
-    Track mu_track(generate_mu_position(&r,cfg.W13) , 0 , pow(-1,b)*acos(generate_mu_costheta(&r)) , previous_mu_time+generate_mu_time(&r));
+    Track mu_track(generate_mu_position(&r,cfg.W13) , 0 , pow(-1,b)*acos(generate_mu_costheta(&r)) , previous_mu_time+generate_mu_time(&r,cfg));
     string s_mu = swim_track(mu_track,cfg,muon,r);
     //if (mu_track.GetTime()<10) cout<<"debug "<<mu_track.GetTime()<<endl;
 
@@ -741,7 +729,7 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
       TVector3 vele = generate_vele(mu_track,ele_theta,r);
       double ele_y = -cfg.GetD1a()-r.Uniform(0,cfg.thickness);
       Track ele_track(mu_track.GetPos().X()+(cfg.GetD1a()+ele_y)*tan(mu_track.GetDir()),ele_y,ele_theta, generate_ele_time(mu_track.GetTime(), &r));
-      //test_ele_x->Fill(ele_track.GetPos().X());
+      test_ele_time->Fill(ele_track.GetTime()-mu_track.GetTime());
       string s_ele = swim_track(ele_track,cfg,electron,r);
  
       if (s_ele == "signal"){        
@@ -795,8 +783,8 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   hs->Add(hist_events);
   hs->Add(hist_sig);
   hs->Add(hist_bkg);
-  hs->Draw();
-  //test_ele_x->Draw();
+  //hs->Draw();
+  test_ele_time->Draw();
   //total number of time coincidences
   //double n_coincidences = hist_events->GetEntries();
   //total number of interferences
@@ -816,7 +804,6 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   cout<<" -------------------------------------------------"<<endl;
   cout<<"muons with 111 pattern absorbed = "<<n_mu_111abs<<" --- 111absorption fraction = "<<(n_mu_111abs/nmu)*100<<" %"<<endl;
   cout<<" -------------------------------------------------"<<endl;
-  //cout<<"muons with trigger pattern but non absorbed = "<<n_mu_nonabs<<endl;
   cout<<"electrons with trigger pattern = "<<n_sig_cand_ele<<" --- electron trigger pattern fraction (out of total number of electrons) = "<<(n_sig_cand_ele/(n_mu_011abs+n_mu_111abs))*100<<" %"<<endl;
   cout<<" -------------------------------------------------"<<endl;
   cout<<"bkg triggers (trough muons + undetectd elec)= "<<n_bkg<<endl;
@@ -827,7 +814,6 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   cout<<" -------------------------------------------------"<<endl;
   cout<<"number of signal events = "<<nhistsig<<" --- fraction of signal events out of total number of incoming muons = "<<(nhistsig/nmu)*100<<" %"<<endl;
   cout<<" -------------------------------------------------"<<endl;
-  //cout<<"number of coincidences = "<<n_coincidences<<endl;
   cout<<"number of interferences = "<<n_interferences<<endl;
   //cout<<"time of the last muon = "<<previous_mu_time<<" seconds"<<endl;
   
@@ -1051,7 +1037,7 @@ inside the function. DONE
 
    Track mu_track(mu_x1,mu_y1,mu_theta); //track should hold also the time DONE
     string s_mu = analyse_track(mu_track,cfg,muon,r);  // this should be swim_track
-    double mu_time = time_temp+generate_mu_time(&r); // this goes before Track
+    double mu_time = time_temp+generate_mu_time(&r,cfg); // this goes before Track
  
    if (s_mu == "signal"){    //if the muon has a trigger pattern and is absorbed
       n_mu_abs++;       
@@ -1093,7 +1079,7 @@ DONE
 
 */
 void mug2(){
-  /* W2 dependency 
+  /* W2 dependency */ 
  double scint2_width[13]={50,47.5,45,42.5,40,37.5,35,32.5,30,27.5,25,22.5,20};
  Config cfg("Cu",nominal);
  for (int i=0;i<13;i++){
@@ -1102,8 +1088,8 @@ void mug2(){
    cout<<"half-week simulation with scintillator width = "<<scint2_width[i]<<endl;
    generate_nsig_nbkg2(0.5,cfg);
  }
-  */
-  /* d2_3 dependency */
+  
+  /* d2_3 dependency 
   double distance_scint2_scint3[13]={1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7};
   Config cfg("Cu",nominal);
   for (int i=0;i<13;i++){
@@ -1112,5 +1098,5 @@ void mug2(){
     cout<<"half-week simulation with distance between scint 2 and scint 3 = "<<distance_scint2_scint3[i]<<endl;
     generate_nsig_nbkg2(0.5,cfg);
   }
-
+*/
 }
