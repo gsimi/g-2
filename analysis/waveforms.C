@@ -1,4 +1,5 @@
-1;3409;0c#include "TGraph.h"
+//1;3409;0c
+#include "TGraph.h"
 #include <iostream>
 #include <fstream>
 #include "TH1F.h"
@@ -373,7 +374,8 @@ TH1F* pulseheight(const char * fdata="data/wave.01_1.txt",
   }
   cout<<endl;
   //  TCanvas *c1=new TCanvas("c1","c1",800,600);
-  h->Draw();
+  //h->Draw();
+  t->Draw();
   //  c1->Update();
   return h;
 }
@@ -428,27 +430,27 @@ void stage(){
 
   channel ch("data/scint-coincid123-ph4-th60mV.dat","data/scint-pedestal.dat");
   ch.plot(25);
-  c->SaveAs("stage_pulse_shape.eps");
-  c->SaveAs("stage_pulse_shape.png");
+  //c->SaveAs("stage_pulse_shape.eps");
+  //c->SaveAs("stage_pulse_shape.png");
 
   c->SetLogy(1);
 
   TH1F* h = pulseheight("data/scint-coincid123-ph4-th60mV.dat","data/scint-pedestal.dat",minval, 165,300);
   TH1F* th=(TH1F*)gROOT->FindObjectAny("th");
   th->GetXaxis()->SetTitle("time (1 unit = 0.2 ns)");
-  if (th!=nullptr){
+  //if (th!=nullptr){
     th->Fit("gaus","","",100,400);
     th->Draw("e");
-    c->SaveAs("stage_pulse_time.eps");
-    c->SaveAs("stage_pulse_time.png");
-  }
-
+    //c->SaveAs("stage_pulse_time.eps");
+    //c->SaveAs("stage_pulse_time.png");
+    //}
+  
   h->GetXaxis()->SetTitle("pulse height (1 unit = 0.24 mV)");
   h->Rebin(42);
   float bw=h->GetBinWidth(0);
   TF1 * f=new TF1("f","[0]*[7]*([3]*TMath::Gaus(x,[1],[2],1) + [5]*exp(-x/[4])/[4]+(1-[3]-[5])*exp(-x/[6])/[6] )",0,2000);
   f->SetParNames("norm","mu","sigma","frac","alpha1","frac1","alpha2","bw");
-  f->SetParameters(h->GetEntries(),500,300,0.75,50,0.25,1000,bw);
+  f->SetParameters(h->GetEntries(),500,300,0.75,50,0.2,1000,bw);
   f->SetParLimits(0,0,1e5);
   f->SetParLimits(1,0,1024);
   f->SetParLimits(2,0,1024);
@@ -462,7 +464,65 @@ void stage(){
   c->SetLogy(0);
   h->Fit(f,"l","",0,1500);
   h->Draw("e");
-  c->SaveAs("stage_pulse_height.eps");
-  c->SaveAs("stage_pulse_height.png");
+  //c->SaveAs("stage_pulse_height.eps");
+  //c->SaveAs("stage_pulse_height.png");
 
+}
+
+// my version 
+
+void stageLeo(){
+  TCanvas *c=new TCanvas("c","c",800,600);
+  //channel ch("data/scint4-3-custom-2907-10000-2.dat","data/scint4-3-custom-2907-10000-pedestal-2.dat");
+  channel ch("data/scint4-3-custom-3007-100000-2.dat","data/scint4-3-custom-3007-100000-pedestal-1.dat");
+  ch.plot(5);
+  //c->SaveAs("data/stage_pulse_shape_leo.eps");
+  //c->SaveAs("data/stage_pulse_shape_leo.png");
+
+  //c->SetLogy(1);
+  
+  //TH1F* h = pulseheight("data/scint4-3-custom-2907-10000-2.dat","data/scint4-3-custom-2907-10000-pedestal-2.dat",minval,165,300);
+  TH1F* h = pulseheight("data/scint4-3-custom-3007-100000-2.dat","data/scint4-3-custom-3007-100000-pedestal-1.dat",minval,165,300);
+  TH1F* th=(TH1F*)gROOT->FindObjectAny("th");
+  th->GetXaxis()->SetTitle("time (1 unit = 0.2 ns)");
+ //  TF1 * g = new TF1("g","log([0]*[1]/[2])-([3]+x*[1])/[2]",0,1000);
+//   g->SetParNames("N0","delta_t_bin","mu_tau","t0");
+//   g->SetParameters(th->GetEntries(),1,11,0);
+//   g->SetParLimits(0,0,1e05);
+//   g->SetParLimits(1,0.5,1.5);
+//   g->SetParLimits(2,5,15);
+//   g->SetParLimits(3,0,1e-05);
+// gStyle->SetOptFit(1);
+//   c->SetLogy(0);
+
+  //if (th!=nullptr){
+  th->Fit("gaus","","",100,400);
+  //th->Fit(g,"l","",0,1000);
+  th->Draw("e");
+    //c->SaveAs("data/stage_pulse_time_leo.eps");
+    //c->SaveAs("data/stage_pulse_time_leo.png");
+    //}
+      
+  h->GetXaxis()->SetTitle("pulse height (1 unit = 0.24 mV)");
+  h->Rebin(42);
+  float bw=h->GetBinWidth(0);
+  TF1 * f=new TF1("f","[0]*[7]*([3]*TMath::Gaus(x,[1],[2],1) + [5]*exp(-x/[4])/[4]+(1-[3]-[5])*exp(-x/[6])/[6] )",0,2000);
+  f->SetParNames("norm","mu","sigma","frac","alpha1","frac1","alpha2","bw");
+  f->SetParameters(h->GetEntries(),400,200,0.8,50,0.15,1000,bw);
+  f->SetParLimits(0,0,1e5);
+  f->SetParLimits(1,0,1024);
+  f->SetParLimits(2,0,1024);
+  f->SetParLimits(3,0,1);
+  f->SetParLimits(4,0,100);
+  f->SetParLimits(5,0,1);
+  f->SetParLimits(6,100,1e4);
+  f->FixParameter(7,bw);
+
+  gStyle->SetOptFit(1);
+  c->SetLogy(0);
+  h->Fit(f,"l","",0,1500);
+  h->Draw("e");
+  //c->SaveAs("data/stage_pulse_height_leo.eps");
+  //c->SaveAs("data/stage_pulse_height_leo.png");
+  
 }
