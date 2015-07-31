@@ -265,7 +265,9 @@ class Config{
   double d2_3;	 //distance between scintillators 2 and 3	       
   double d2_a;	    // distance between scintillator 2 and the absorber
   double mu_rate;   //nominal comsic muon rate at sea level
-  double detection_efficiency;  //efficiency of the muon detection, will be determined by the experiment
+  double eff1;  //efficiency of the muon detection for scintillator 1
+  double eff2;  //efficiency of the muon detection for scintillator 1
+  double eff3;  //efficiency of the muon detection for scintillator 1
  private:
 };
 Config::Config(char *absorber, int geometry){
@@ -322,18 +324,20 @@ Config::Config(char *absorber, int geometry){
     d2_3 = 3;    //distance between scintillators 2 and 3	       
     d2_a = 0.25;    // distance between scintillator 2 and the absorber
   }
-  if (geometry == nominal){
+  if (geometry == experiment){
     W13 = 30.5;       //width of scintillators 1 and 3[cm] MEASURE NEEDED	
     W2 = 30.5;       //width of scintillator 2[cm]		       
     L = 30.5;       //length of the scintillators MEASURE NEEDED		
     d1 = 1;       //thickness of scintillator 1 [cm]		       
     d2 = 1;       //thickness of scintillator 2 [cm]		       
-    d1_2 = 3.5;     //distance between scintillators 1 and 2	       
-    d2_3 = 3;    //distance between scintillators 2 and 3  MEASURE NEEDED	
-    d2_a = 0.25;    // distance between scintillator 2 and the absorber MEASURE NEEDED
+    d1_2 = 3.5;     //distance between scintillators 1 and 2 [cm]	       
+    d2_3 = 3.5;    //distance between scintillators 2 and 3 [cm] MEASURE NEEDED	
+    d2_a = 1;    // distance between scintillator 2 and the absorber [cm] MEASURE NEEDED
   }
   mu_rate=1./60;//1 muon / square cm2 / minute
-  detection_efficiency = 1.;  //value is set to 100% for now
+  eff1 = 0.9176-(0.007414*d1_2);  //values taken from the experimental data
+  eff2 = 0.9528-(0.0037*d1_2);  //values taken from the experimental data
+  eff3 = 0.942-(0.001271*d1_2);  //values taken from the experimental data
 }
 
 double Config::GetD1a(){
@@ -817,6 +821,9 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   cout<<"number of interferences = "<<n_interferences<<endl;
   //cout<<"time of the last muon = "<<previous_mu_time<<" seconds"<<endl;
   
+  //detection efficiency reducing by the same amount the number of signals and background
+  nele = nele*cfg.eff1*cfg.eff2;
+  n_bkg = n_bkg*cfg.eff1*cfg.eff2;
   res.push_back(nele); res.push_back(n_bkg);
   res.push_back(nmu);
   return res;
@@ -1079,7 +1086,7 @@ DONE
 
 */
 void mug2(){
-  /* W2 dependency */ 
+  /* W2 dependency 
  double scint2_width[13]={50,47.5,45,42.5,40,37.5,35,32.5,30,27.5,25,22.5,20};
  Config cfg("Cu",nominal);
  for (int i=0;i<13;i++){
@@ -1088,7 +1095,7 @@ void mug2(){
    cout<<"half-week simulation with scintillator width = "<<scint2_width[i]<<endl;
    generate_nsig_nbkg2(0.5,cfg);
  }
-  
+  */
   /* d2_3 dependency 
   double distance_scint2_scint3[13]={1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7};
   Config cfg("Cu",nominal);
@@ -1099,4 +1106,15 @@ void mug2(){
     generate_nsig_nbkg2(0.5,cfg);
   }
 */
+
+ /* Detection efficiency */
+ double d[6]={1,2,3,4,5,6};
+ Config cfg("Cu",experiment);
+ for (int i=0;i<6;i++){
+   cfg.d1_2 = d[i];
+   cfg.d2_3 = d[i];
+   cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+   cout<<"half-week simulation with distance between scintillators = "<<d[i]<<endl;
+   generate_nsig_nbkg2(1,cfg);
+ }
 }
