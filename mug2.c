@@ -266,8 +266,8 @@ class Config{
   double d2_a;	    // distance between scintillator 2 and the absorber
   double mu_rate;   //nominal comsic muon rate at sea level
   double eff1;  //efficiency of the muon detection for scintillator 1
-  double eff2;  //efficiency of the muon detection for scintillator 1
-  double eff3;  //efficiency of the muon detection for scintillator 1
+  double eff2;  //efficiency of the muon detection for scintillator 2
+  double eff3;  //efficiency of the muon detection for scintillator 3
  private:
 };
 Config::Config(char *absorber, int geometry){
@@ -335,9 +335,9 @@ Config::Config(char *absorber, int geometry){
     d2_a = 1;    // distance between scintillator 2 and the absorber [cm] MEASURE NEEDED
   }
   mu_rate=1./60;//1 muon / square cm2 / minute
-  eff1 = 0.9176-(0.007414*d1_2);  //values taken from the experimental data
-  eff2 = 0.9528-(0.0037*d1_2);  //values taken from the experimental data
-  eff3 = 0.942-(0.001271*d1_2);  //values taken from the experimental data
+  eff1 = 0.9337;  //values taken from the experimental data
+  eff2 = 0.9695;  //values taken from the experimental data
+  eff3 = 0.9585;  //values taken from the experimental data
 }
 
 double Config::GetD1a(){
@@ -797,7 +797,7 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   //h->Draw();
   double nele=hist_sig->GetEntries();
   double nhistsig=hist_sig->GetEntries();
-  /* display of the testing numbers*/
+  /* display of the testing numbers
   cout<<"muons in the acceptance = "<<nmu<<endl;
   cout<<" -------------------------------------------------"<<endl;
   cout<<"muons with 011 pattern = "<<n_mu_011abs+n_mu_011nonabs<<" --- muon 011 pattern fraction = "<<((n_mu_011abs+n_mu_011nonabs)/nmu)*100<<" %"<<endl;
@@ -818,7 +818,7 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   cout<<" -------------------------------------------------"<<endl;
   cout<<"number of signal events = "<<nhistsig<<" --- fraction of signal events out of total number of incoming muons = "<<(nhistsig/nmu)*100<<" %"<<endl;
   cout<<" -------------------------------------------------"<<endl;
-  cout<<"number of interferences = "<<n_interferences<<endl;
+  cout<<"number of interferences = "<<n_interferences<<endl;*/
   //cout<<"time of the last muon = "<<previous_mu_time<<" seconds"<<endl;
   
   //detection efficiency reducing by the same amount the number of signals and background
@@ -1032,59 +1032,6 @@ void tables(char* absorber="Cu", double W2=50, double d2_3=3){
  */
 }
 
-
-/*
-21/07/15
-
-generate_nsig_nbkg2(nmu,absorber,thickness,cfg.W2,cfg.d2_3).X()
-pass the config object directly to not replicate the creation of the geometry
-inside the function. DONE
-
-
-
-   Track mu_track(mu_x1,mu_y1,mu_theta); //track should hold also the time DONE
-    string s_mu = analyse_track(mu_track,cfg,muon,r);  // this should be swim_track
-    double mu_time = time_temp+generate_mu_time(&r,cfg); // this goes before Track
- 
-   if (s_mu == "signal"){    //if the muon has a trigger pattern and is absorbed
-      n_mu_abs++;       
-      //cout<<"mu_time abs = "<<mu_time<<endl;
-      daq.Trigger(mu_time,muon,last_ele_time);    //beginning of the acquisition with start_tim
-
-
-
-in DAQ 
-    substitute SetInter with AddInterference
-    add data member start_particle
-    set start_particle in the SetStart(time, particle) function
-    add sign_hist and bkg_hist together with GetSigHist and GetBkgHist
-    substitute Trigger with Trigger2
-    change the name to SaveInterval or SaveTimeStamp or 
-DONE
-
-in generate_nsig....
-
-
-      //generate direction of the electron momentum         
-      float ele_costheta=generate_ele_costheta(&r);
-      float ele_phi=r.Uniform(-3.1416,3.1416);
-      TVector3 vele(vmu);
-      float ele_theta = acos(ele_costheta);
-      if(ele_theta>0) ele_theta = 3.1416+ele_theta ;
-      if(ele_theta<=0) ele_theta = -3.1416+ele_theta;
-      vele.RotateX(ele_theta);
-      vele.Rotate(ele_phi,vmu);
-      //generate the position where the muon has stopped and the angle of the electron
-      float ele_y=-d-r.Uniform(0,thickness);
-      float ele_x = mu_x1+(d+ele_y)*tan(mu_theta);
-      Track ele_track(ele_x,ele_y,ele_theta);
-
-
-    move this into a function or a class that returns the electron track
-DONE
-
-
-*/
 void mug2(){
   /* W2 dependency 
  double scint2_width[13]={50,47.5,45,42.5,40,37.5,35,32.5,30,27.5,25,22.5,20};
