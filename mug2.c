@@ -265,9 +265,9 @@ class Config{
   double d2_3;	 //distance between scintillators 2 and 3	       
   double d2_a;	    // distance between scintillator 2 and the absorber
   double mu_rate;   //nominal comsic muon rate at sea level
-  double eff1;  //efficiency of the muon detection for scintillator 1
-  double eff2;  //efficiency of the muon detection for scintillator 2
-  double eff3;  //efficiency of the muon detection for scintillator 3
+  double eff1;  //efficiency of the muon detection for scintillator 1 (S3 in the experiment)
+  double GetEff2();  //efficiency of the muon detection for scintillator 2 (SC in the experiment)
+  double GetEff3();  //efficiency of the muon detection for scintillator 3 (S4 in the experiment)
  private:
 };
 Config::Config(char *absorber, int geometry){
@@ -335,11 +335,18 @@ Config::Config(char *absorber, int geometry){
     d2_a = 1;    // distance between scintillator 2 and the absorber [cm] MEASURE NEEDED
   }
   mu_rate=1./60;//1 muon / square cm2 / minute
-  eff1 = 0.9337;  //values taken from the experimental data
-  eff2 = 0.9695;  //values taken from the experimental data
-  eff3 = 0.9585;  //values taken from the experimental data
+  eff1 = 1.01;  //values taken from the experimental data
+  //eff2 = 0.96;  //values taken from the experimental data  
+  //eff3 = 0.98;  //values taken from the experimental data
+  //eff2 = 0.97248*(1-d1_2/25);
+  //eff3 = 0.972944*(1-d2_3/27.3);
 }
-
+double Config::GetEff2(){
+return 0.97248*(1-d1_2/55);
+}
+double Config::GetEff3(){
+return 0.972944*(1-d2_3/60);
+}
 double Config::GetD1a(){
   return d1+d2+d1_2+d2_a;
 }
@@ -630,6 +637,31 @@ bool is_absorbed(Track track, Config cfg, TRandom *r){
   return abs;
 }
 
+bool is_detected(Config cfg,TRandom *r,targettype scintillator){
+  bool rep = false;
+  double f = r->Uniform(0,1);
+  switch(scintillator){
+  case scint1: { 
+    rep = true;
+    break;
+  }
+  case scint2: {
+    if (f<cfg.GetEff2()) rep = true;
+    break;
+  }
+  case absor: {
+    break;
+  }
+  case scint3: {
+    if (f<cfg.GetEff3()) rep = true;
+    break;
+  }
+  default :
+    cout<<"scintillator must be scint1, scint2 or scint 3"<<endl;
+  }
+  return rep; 
+}
+
 
 /* Function that first get the pattern of the track, and returns a string depending on the trigger pattern and on the particle considered.
  */
@@ -638,44 +670,54 @@ string swim_track(Track track, Config cfg, particletype particle,TRandom r){
   int pattern = get_pattern(track,cfg);
   switch(particle){
   case muon: {
-    if(pattern == 3){                     //if the muon hits scint 1 and 2 but will not hit scint3
-      if(is_absorbed(track,cfg,&r)){
-	s = "011absorbed";              
+    if(pattern == 3 || pattern == 7){  //if the muon hits at least scint1 and scint2
+      if (is_detected(cfg,&r,scint2)){
+	if(pattern == 3){                     //if the muon hits scint 1 and 2 but will not hit scint3
+	  if(is_absorbed(track,cfg,&r)){
+	    s = "011absorbed";              
+	  }
+	  else { 
+	    s = "011nonabsorbed";
+	  }
+	} 
+	if(pattern == 7){                   //if the muon hits scint 1 and 2 and is going to hit scint3
+	  if(is_absorbed(track,cfg,&r)){
+	    s = "111absorbed";
+	  }
+	  else {
+	    if(!is_detected(cfg,&r,scint3)) { 
+	      s = "111nonabsorbed+undetectedbyscint3";
+	    }
+	    else{
+	      s = "111nonabsorbed";
+	    }
+	  }
+	}
       }
-      else { 
-	s = "011nonabsorbed";
+      else { // if undetected by scint2
+	s ="undetectedbyscint2";
       }
     }
-    else{
-      if(pattern == 7){                   //if the muon hits scint 1 and 2 and is going to hit scint3
-	if(is_absorbed(track,cfg,&r)){
-	  s = "111absorbed";
-	}
-	else {
-	  s = "111nonabsorbed";
-	}
-      }
       else {                        //in any other cases
 	s = "false";
       }
-    }
     break;
-  }
+    }
   case electron: {
     double theta_ele = track.GetDir();
     if(theta_ele>=0 && theta_ele<=3.1416){         //if the electron is upgoing
       if ((pattern == 3) || (pattern == 7)){          //if it hits scint 1 and 2 (the fact that it also hits scint3 is irrelevant considering it as upgoing)
-	s = "signal";
+	  s = "signal";
       }
       else {                         //if it does not hit both scint 1 and 2
 	s = "false";
       }
-    }
+      }
     else {               //if it is downgoing
       s = "false";
     }
     break;  
-  }
+    }
   default :
     cout<<"particle must be muon or electron"<<endl;
   }
@@ -711,14 +753,20 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   double n_ele_stopped = 0;    //number of electrons stopped in the absorber
   double n_ele_escaped = 0;    //number of electrons with non-trigger pattern 
   double n_bkg = 0;            //number of background triggers
- 
+  double n_undetected_scint2 = 0; 
+  double n_undetected_scint3 = 0;
+  
   for (int i=0;i<nmu;i++){
     //muon position, angle and time, stored in the muon track 
     int b=r.Integer(2);
     Track mu_track(generate_mu_position(&r,cfg.W13) , 0 , pow(-1,b)*acos(generate_mu_costheta(&r)) , previous_mu_time+generate_mu_time(&r,cfg));
     string s_mu = swim_track(mu_track,cfg,muon,r);
     //if (mu_track.GetTime()<10) cout<<"debug "<<mu_track.GetTime()<<endl;
-
+    if(s_mu == "undetectedbyscint2"){
+      n_undetected_scint2++;
+      previous_mu_time = mu_track.GetTime();
+      continue;
+    }
     if (s_mu == "011absorbed" || s_mu == "111absorbed"){    
       //the muon is absorbed
       if (s_mu == "011absorbed") n_mu_011abs++;
@@ -772,11 +820,21 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
       n_bkg++;
       n_mu_011nonabs++;
     }
-    if (s_mu == "111nonabsorbed") n_mu_111nonabs++;
-    //storage of the muon trigger time
-    previous_mu_time = mu_track.GetTime(); 
-  }
-
+    if (s_mu == "111nonabsorbed"){ 
+      n_mu_111nonabs++;
+      //storage of the muon trigger time
+      previous_mu_time = mu_track.GetTime();
+    }
+    if (s_mu == "111nonabsorbed+undetectedbyscint3"){
+      daq.SaveInterval(mu_track.GetTime(),muon);
+      n_undetected_scint3++;
+      n_bkg++;
+    }
+    if (s_mu == "false"){
+      continue;
+    }   
+  }   
+ 
   THStack *hs = new THStack("hs","stacked histograms");
   TH1F* hist_events = daq.GetHist();
   hist_events->SetFillColor(kRed);
@@ -797,12 +855,18 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   //h->Draw();
   double nele=hist_sig->GetEntries();
   double nhistsig=hist_sig->GetEntries();
-  /* display of the testing numbers
+  /* display of the testing numbers */
+  cout<<"d1_2 = "<<cfg.d1_2<<" and d2_3 = "<<cfg.d2_3<<endl;
+  cout<<"eff2 = "<<cfg.GetEff2()<<" and eff3 = "<<cfg.GetEff3()<<endl;
   cout<<"muons in the acceptance = "<<nmu<<endl;
   cout<<" -------------------------------------------------"<<endl;
-  cout<<"muons with 011 pattern = "<<n_mu_011abs+n_mu_011nonabs<<" --- muon 011 pattern fraction = "<<((n_mu_011abs+n_mu_011nonabs)/nmu)*100<<" %"<<endl;
+  //cout<<"muons with 011 pattern = "<<n_mu_011abs+n_mu_011nonabs<<" --- muon 011 pattern fraction = "<<((n_mu_011abs+n_mu_011nonabs)/nmu)*100<<" %"<<endl;
+  cout<<"scint2 efficiency = "<<(n_mu_011abs+n_mu_011nonabs+n_mu_111abs+n_mu_111nonabs+n_undetected_scint3)*100/nmu<<" %"<<endl;
   cout<<" -------------------------------------------------"<<endl;
-  cout<<"muons with 111 pattern = "<<n_mu_111abs+n_mu_111nonabs<<" --- muon 111 pattern fraction = "<<((n_mu_111abs+n_mu_111nonabs)/nmu)*100<<" %"<<endl;
+  //cout<<"muons with 111 pattern = "<<n_mu_111abs+n_mu_111nonabs<<" --- muon 111 pattern fraction = "<<((n_mu_111abs+n_mu_111nonabs)/nmu)*100<<" %"<<endl;
+  cout<<"scint3 efficiency = "<<(n_mu_111abs+n_mu_111nonabs)*100/(n_mu_011abs+n_mu_011nonabs+n_mu_111abs+n_mu_111nonabs+n_undetected_scint3)<<" %"<<endl;
+  cout<<n_undetected_scint2<<" muons undetected by scint2 and "<<n_undetected_scint3<<" muons undetected by scint3"<<endl;
+  /*
   cout<<" -------------------------------------------------"<<endl;
   cout<<"muons with 011 pattern absorbed = "<<n_mu_011abs<<" --- 011absorption fraction = "<<(n_mu_011abs/nmu)*100<<" %"<<endl;
   cout<<" -------------------------------------------------"<<endl;
@@ -822,12 +886,12 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   //cout<<"time of the last muon = "<<previous_mu_time<<" seconds"<<endl;
   
   //detection efficiency reducing by the same amount the number of signals and background
-  nele = nele*cfg.eff1*cfg.eff2;
-  n_bkg = n_bkg*cfg.eff1*cfg.eff2;
+  cout<<"number of true signals = "<<nele<<endl;
+  cout<<"number of background = "<<n_bkg<<endl;
   res.push_back(nele); res.push_back(n_bkg);
   res.push_back(nmu);
   return res;
-}
+  }
 
 
 
@@ -1033,35 +1097,46 @@ void tables(char* absorber="Cu", double W2=50, double d2_3=3){
 }
 
 void mug2(){
-  /* W2 dependency 
- double scint2_width[13]={50,47.5,45,42.5,40,37.5,35,32.5,30,27.5,25,22.5,20};
+  /* W2 dependency
+  double scint2_width[15]={27,26.5,26,25.5,25,24.5,24,23.5,23,22.5,22,21.5,21,20.5,20};
  Config cfg("Cu",nominal);
- for (int i=0;i<13;i++){
+ for (int i=0;i<15;i++){
    cfg.W2 = scint2_width[i];
    cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
-   cout<<"half-week simulation with scintillator width = "<<scint2_width[i]<<endl;
-   generate_nsig_nbkg2(0.5,cfg);
- }
-  */
+   cout<<"one-week simulation with scintillator width = "<<scint2_width[i]<<endl;
+   generate_nsig_nbkg2(1,cfg);
+ }*/
+  
   /* d2_3 dependency 
   double distance_scint2_scint3[13]={1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7};
   Config cfg("Cu",nominal);
   for (int i=0;i<13;i++){
     cfg.d2_3 = distance_scint2_scint3[i];
     cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
-    cout<<"half-week simulation with distance between scint 2 and scint 3 = "<<distance_scint2_scint3[i]<<endl;
-    generate_nsig_nbkg2(0.5,cfg);
-  }
-*/
+    cout<<"one-week simulation with distance between scint 2 and scint 3 = "<<distance_scint2_scint3[i]<<endl;
+    generate_nsig_nbkg2(1,cfg);
+    } */
 
- /* Detection efficiency */
- double d[6]={1,2,3,4,5,6};
- Config cfg("Cu",experiment);
- for (int i=0;i<6;i++){
+
+  /* Detection efficiency */
+  double d[5]={0,2,3.5,5,7};
+ Config cfg("Cu",nominal);
+ for (int i=0;i<5;i++){
    cfg.d1_2 = d[i];
    cfg.d2_3 = d[i];
    cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
-   cout<<"half-week simulation with distance between scintillators = "<<d[i]<<endl;
+   cout<<"one-week simulation with distance between scintillators = "<<d[i]<<endl;
+   generate_nsig_nbkg2(1,cfg);
+} 
+
+  /* Thickness 
+  double t[12]={0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6};
+ Config cfg("Cu",nominal);
+ for (int i=0;i<12;i++){
+   cfg.thickness = t[i];
+   cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+   cout<<"one-week simulation with thickness of absorber = "<<t[i]<<endl;
    generate_nsig_nbkg2(1,cfg);
  }
+*/
 }
