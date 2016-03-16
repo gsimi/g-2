@@ -325,28 +325,28 @@ Config::Config(char *absorber, int geometry){
     d2_a = 0.25;    // distance between scintillator 2 and the absorber
   }
   if (geometry == experiment){
-    W13 = 30.5;       //width of scintillators 1 and 3[cm] MEASURE NEEDED	
+    W13 = 30.5;       //width of scintillators 1 and 3[cm]	
     W2 = 30.5;       //width of scintillator 2[cm]		       
-    L = 30.5;       //length of the scintillators MEASURE NEEDED		
+    L = 30.5;       //length of the scintillators		
     d1 = 1;       //thickness of scintillator 1 [cm]		       
     d2 = 1;       //thickness of scintillator 2 [cm]		       
-    d1_2 = 3.5;     //distance between scintillators 1 and 2 [cm]	       
-    d2_3 = 3.5;    //distance between scintillators 2 and 3 [cm] MEASURE NEEDED	
-    d2_a = 1;    // distance between scintillator 2 and the absorber [cm] MEASURE NEEDED
+    d1_2 = 0.25;     //distance between scintillators 1 and 2 [cm]	       
+    d2_3 = 10,5;    //distance between scintillators 2 and 3 [cm]	
+    d2_a = 0.25;    // distance between scintillator 2 and the absorber [cm]
   }
   mu_rate=1./60;//1 muon / square cm2 / minute
-  eff1 = 1.01;  //values taken from the experimental data
-  //eff2 = 0.96;  //values taken from the experimental data  
-  //eff3 = 0.98;  //values taken from the experimental data
+  eff1 = 1.;  //muons are generated on top of scintillator 1 so its efficiency is 100%
   //eff2 = 0.97248*(1-d1_2/25);
   //eff3 = 0.972944*(1-d2_3/27.3);
 }
+//formulas extracted from the fitting of the experimental efficiency curve
 double Config::GetEff2(){
 return 0.97248*(1-d1_2/55);
 }
 double Config::GetEff3(){
 return 0.972944*(1-d2_3/60);
 }
+
 double Config::GetD1a(){
   return d1+d2+d1_2+d2_a;
 }
@@ -531,9 +531,9 @@ private :
 };
 
 DAQ::DAQ(float gate, double start){
-  hist_events = new TH1F("time_events","trigger time distribution",100,0,1e-04); 
-  sig_hist = new TH1F("time_signals","true coincidences",100,0,1e-04); 
-  bkg_hist = new TH1F("time_bkg","interferences",100,0,1e-04); 
+  hist_events = new TH1F("time_events","trigger time distribution",1000,0,1e-04); 
+  sig_hist = new TH1F("time_signals","true coincidences",1000,0,1e-04); 
+  bkg_hist = new TH1F("time_bkg","interferences",1000,0,1e-04); 
   gate_width = gate;	   
   start_time = start;
   n_interferences = 0;
@@ -637,6 +637,7 @@ bool is_absorbed(Track track, Config cfg, TRandom *r){
   return abs;
 }
 
+/* Function that checks if a muon hitting a scintillator is detected, based on its efficiency*/
 bool is_detected(Config cfg,TRandom *r,targettype scintillator){
   bool rep = false;
   double f = r->Uniform(0,1);
@@ -726,7 +727,7 @@ string swim_track(Track track, Config cfg, particletype particle,TRandom r){
 }
 
 
-//last version of this function
+/*Function simulating the interatctions of the muons in the experimental setup during a given time and returning the number of signals, the number of background events and the total number of incoming muons */
 std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
 
   float ndays=nweeks*7;
@@ -826,9 +827,9 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
       previous_mu_time = mu_track.GetTime();
     }
     if (s_mu == "111nonabsorbed+undetectedbyscint3"){
-      daq.SaveInterval(mu_track.GetTime(),muon);
       n_undetected_scint3++;
       n_bkg++;
+      previous_mu_time = mu_track.GetTime();
     }
     if (s_mu == "false"){
       continue;
@@ -855,39 +856,40 @@ std::vector<float> generate_nsig_nbkg2(float nweeks, Config cfg){
   //h->Draw();
   double nele=hist_sig->GetEntries();
   double nhistsig=hist_sig->GetEntries();
-  /* display of the testing numbers */
-  cout<<"d1_2 = "<<cfg.d1_2<<" and d2_3 = "<<cfg.d2_3<<endl;
-  cout<<"eff2 = "<<cfg.GetEff2()<<" and eff3 = "<<cfg.GetEff3()<<endl;
+  /* display of the testing numbers 
   cout<<"muons in the acceptance = "<<nmu<<endl;
   cout<<" -------------------------------------------------"<<endl;
-  //cout<<"muons with 011 pattern = "<<n_mu_011abs+n_mu_011nonabs<<" --- muon 011 pattern fraction = "<<((n_mu_011abs+n_mu_011nonabs)/nmu)*100<<" %"<<endl;
-  cout<<"scint2 efficiency = "<<(n_mu_011abs+n_mu_011nonabs+n_mu_111abs+n_mu_111nonabs+n_undetected_scint3)*100/nmu<<" %"<<endl;
+  cout<<"muons with 011 pattern = "<<n_mu_011abs+n_mu_011nonabs<<endl;
+  //cout<<"scint2 efficiency = "<<(n_mu_011abs+n_mu_011nonabs+n_mu_111abs+n_mu_111nonabs+n_undetected_scint3)*100/nmu<<" %"<<endl;
   cout<<" -------------------------------------------------"<<endl;
-  //cout<<"muons with 111 pattern = "<<n_mu_111abs+n_mu_111nonabs<<" --- muon 111 pattern fraction = "<<((n_mu_111abs+n_mu_111nonabs)/nmu)*100<<" %"<<endl;
-  cout<<"scint3 efficiency = "<<(n_mu_111abs+n_mu_111nonabs)*100/(n_mu_011abs+n_mu_011nonabs+n_mu_111abs+n_mu_111nonabs+n_undetected_scint3)<<" %"<<endl;
-  cout<<n_undetected_scint2<<" muons undetected by scint2 and "<<n_undetected_scint3<<" muons undetected by scint3"<<endl;
-  /*
+  cout<<"muons with 111 pattern = "<<n_mu_111abs+n_mu_111nonabs<<endl;
+  //cout<<"scint3 efficiency = "<<(n_mu_111abs+n_mu_111nonabs)*100/(n_mu_011abs+n_mu_011nonabs+n_mu_111abs+n_mu_111nonabs+n_undetected_scint3)<<" %"<<endl;
+  //cout<<n_undetected_scint2<<" muons undetected by scint2 and "<<n_undetected_scint3<<" muons undetected by scint3"<<endl;
   cout<<" -------------------------------------------------"<<endl;
-  cout<<"muons with 011 pattern absorbed = "<<n_mu_011abs<<" --- 011absorption fraction = "<<(n_mu_011abs/nmu)*100<<" %"<<endl;
+  cout<<"muons with 011 pattern absorbed = "<<n_mu_011abs<<endl;
   cout<<" -------------------------------------------------"<<endl;
-  cout<<"muons with 111 pattern absorbed = "<<n_mu_111abs<<" --- 111absorption fraction = "<<(n_mu_111abs/nmu)*100<<" %"<<endl;
+  cout<<"muons with 111 pattern absorbed = "<<n_mu_111abs<<endl;
   cout<<" -------------------------------------------------"<<endl;
-  cout<<"electrons with trigger pattern = "<<n_sig_cand_ele<<" --- electron trigger pattern fraction (out of total number of electrons) = "<<(n_sig_cand_ele/(n_mu_011abs+n_mu_111abs))*100<<" %"<<endl;
+  cout<<"electrons with trigger pattern = "<<n_sig_cand_ele<<endl;
   cout<<" -------------------------------------------------"<<endl;
+  cout<<"electrons stopped = "<<n_ele_stopped<<endl;
+  cout<<" -------------------------------------------------"<<endl;
+  cout<<"electrons escaped = "<<n_ele_escaped<<endl;
+  cout<<" -------------------------------------------------"<<endl;
+  cout<<"number of signal events = "<<nhistsig<<endl;
+  cout<<" -------------------------------------------------"<<endl;
+  cout<<"number of interferences = "<<n_interferences<<endl;
   cout<<"bkg triggers (trough muons + undetectd elec)= "<<n_bkg<<endl;
   cout<<" -------------------------------------------------"<<endl;
-  cout<<"electrons stopped = "<<n_ele_stopped<<" --- fraction of stopped electrons among trigger pattern electrons = "<<(n_ele_stopped/n_sig_cand_ele)*100<<" %"<<endl;
-  cout<<" -------------------------------------------------"<<endl;
-  cout<<"electrons escaped = "<<n_ele_escaped<<" --- fraction of escaping electrons among generated electrons = "<<(n_ele_escaped/(n_mu_011abs+n_mu_111abs))*100<<" %"<<endl;
-  cout<<" -------------------------------------------------"<<endl;
-  cout<<"number of signal events = "<<nhistsig<<" --- fraction of signal events out of total number of incoming muons = "<<(nhistsig/nmu)*100<<" %"<<endl;
-  cout<<" -------------------------------------------------"<<endl;
-  cout<<"number of interferences = "<<n_interferences<<endl;*/
-  //cout<<"time of the last muon = "<<previous_mu_time<<" seconds"<<endl;
-  
+  */
+  cout<<"signal rate = "<<n_sig_cand_ele/(7*24*3600)<<" Hz"<<endl;
+  cout<<"bkg rate = "<<n_bkg/(7*24*3600)<<" Hz"<<endl;
+  cout<<"bkg/signal = "<<n_bkg/n_sig_cand_ele<<endl;
+  cout<<"signal/sqrt(bkg) = "<<n_sig_cand_ele/sqrt(n_bkg)<<endl;
+
   //detection efficiency reducing by the same amount the number of signals and background
-  cout<<"number of true signals = "<<nele<<endl;
-  cout<<"number of background = "<<n_bkg<<endl;
+  //cout<<"number of true signals = "<<nele<<endl;
+  //cout<<"number of background = "<<n_bkg<<endl;
   res.push_back(nele); res.push_back(n_bkg);
   res.push_back(nmu);
   return res;
@@ -984,7 +986,6 @@ void tables(char* absorber="Cu", double W2=50, double d2_3=3){
     float DeltaB=B_nom*Bsigma[i]*sqrt(12);
     gm2err_Bsigma[i]=toyfit(ns_nom,B_nom,nb_nom,alpha_nom,cfg.tauminus,cfg.ifit,DeltaB);
   }
-
   
   //scintillator 2 width dependency
   /*double scint2_width[20] = {2.5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30,32.5,35,37.5,40,42.5,45,47.5,50,55}
@@ -1097,15 +1098,15 @@ void tables(char* absorber="Cu", double W2=50, double d2_3=3){
 }
 
 void mug2(){
-  /* W2 dependency
-  double scint2_width[15]={27,26.5,26,25.5,25,24.5,24,23.5,23,22.5,22,21.5,21,20.5,20};
+  /* W2 dependency 
+  double scint2_width[13]={50,47.5,45,42.5,40,37.5,35,32.5,30,27.5,25,22.5,20};
  Config cfg("Cu",nominal);
- for (int i=0;i<15;i++){
+ for (int i=0;i<13;i++){
    cfg.W2 = scint2_width[i];
    cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
    cout<<"one-week simulation with scintillator width = "<<scint2_width[i]<<endl;
    generate_nsig_nbkg2(1,cfg);
- }*/
+   } */
   
   /* d2_3 dependency 
   double distance_scint2_scint3[13]={1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7};
@@ -1118,7 +1119,7 @@ void mug2(){
     } */
 
 
-  /* Detection efficiency */
+  /* Detection efficiency 
   double d[5]={0,2,3.5,5,7};
  Config cfg("Cu",nominal);
  for (int i=0;i<5;i++){
@@ -1127,7 +1128,7 @@ void mug2(){
    cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
    cout<<"one-week simulation with distance between scintillators = "<<d[i]<<endl;
    generate_nsig_nbkg2(1,cfg);
-} 
+} */
 
   /* Thickness 
   double t[12]={0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6};
@@ -1139,4 +1140,36 @@ void mug2(){
    generate_nsig_nbkg2(1,cfg);
  }
 */
+
+  //simulation of different setups for the experiment 
+
+  Config cfg1("Al",experiment);
+  cfg1.thickness = 10; cfg1.d2_3 = 10.5;
+  cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+  cout<<"one-week simulation with "<<cfg1.thickness<<" cm of Al"<<endl;
+  generate_nsig_nbkg2(1,cfg1);
+
+  cfg1.thickness = 20; cfg1.d2_3 = 20.5;
+  cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+  cout<<"one-week simulation with "<<cfg1.thickness<<" cm of Al"<<endl;
+  generate_nsig_nbkg2(1,cfg1);
+
+  Config cfg2("Cu",experiment);
+  cfg2.thickness = 2.5; cfg2.d2_3 = 3;
+  cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+  cout<<"one-week simulation with "<<cfg2.thickness<<" cm of Cu"<<endl;
+  generate_nsig_nbkg2(1,cfg2);
+
+  Config cfg3("Fe",experiment);
+  cfg3.thickness = 2.5; cfg3.d2_3 = 3;
+  cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+  cout<<"one-week simulation with "<<cfg3.thickness<<" cm of Fe"<<endl;
+  generate_nsig_nbkg2(1,cfg3);
+
+  Config cfg4("Pb",experiment);
+  cfg4.thickness = 2.5; cfg4.d2_3 = 3;
+  cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+  cout<<"one-week simulation with "<<cfg4.thickness<<" cm of Pb"<<endl;
+  generate_nsig_nbkg2(1,cfg4);
+
 }

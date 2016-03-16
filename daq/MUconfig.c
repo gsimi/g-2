@@ -63,6 +63,7 @@ int ParseConfigFile(FILE *f_ini, WaveDumpConfig_t *WDcfg)
     WDcfg->useCorrections = -1;
     WDcfg->EventsToWrite=0;
     WDcfg->PlotMask=0;
+    WDcfg->MajorityTh=0;
 
 
 	/* read config file and assign parameters */
@@ -398,7 +399,16 @@ int ParseConfigFile(FILE *f_ini, WaveDumpConfig_t *WDcfg)
 	  continue;
 	}
 
-	
+	if (strstr(str, "MAJORITY_TH")!=NULL) {
+	  read = fscanf(f_ini, "%d", &WDcfg->MajorityTh);
+	  continue;
+	}
+
+	if (strstr(str, "DISCRIMINATOR_TH")!=NULL) {
+	  read = fscanf(f_ini, "%d", &WDcfg->DiscriminatorTh);
+	  continue;
+	}
+
         printf("%s: invalid setting\n", str);
 	}
 	return 0;

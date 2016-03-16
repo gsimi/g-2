@@ -13,12 +13,18 @@
 
 # total number of evens to run
 #EVENTS_TO_WRITE 100000
-EVENTS_TO_WRITE 1000
+EVENTS_TO_WRITE 15000
 
 # bit mask of channels to display initially on the plot
 # 0x100 is the mask for TR0
 # 0x0ff is the mask for channels 0->7
 CHANNELS_TO_PLOT 0x102
+
+### Discriminator V895 configuration ###
+# majority setting th=nint(level*50-25)/4)  level=2 th=19, level=4 th=44 
+MAJORITY_TH 44
+# treshold in mV for the discriminator
+DISCRIMINATOR_TH 40
 
 # OPEN: open the digitizer
 # options: USB 0 0      Desktop/NIM digitizer through USB              

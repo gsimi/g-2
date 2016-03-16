@@ -44,14 +44,19 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(datadir)"
-bin_PROGRAMS = mudaq$(EXEEXT)
+bin_PROGRAMS = mudaq$(EXEEXT) test$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 MainProgram = mudaq
-am_wavedump_OBJECTS = $(MainProgram).$(OBJEXT) PDconfig.$(OBJEXT) \
+am_wavedump_OBJECTS = $(MainProgram).$(OBJEXT) MUconfig.$(OBJEXT) \
 	WDplot.$(OBJEXT) X742CorrectionRoutines.$(OBJEXT) \
 	fft.$(OBJEXT) keyb.$(OBJEXT) 
 wavedump_OBJECTS = $(am_wavedump_OBJECTS)
 wavedump_DEPENDENCIES =
+MainProgram2 = test
+test_OBJECTS = $(MainProgram2).$(OBJEXT) MUconfig.$(OBJEXT) \
+	WDplot.$(OBJEXT) X742CorrectionRoutines.$(OBJEXT) \
+	fft.$(OBJEXT) keyb.$(OBJEXT) 
+test_DEPENDENCIES =
 DEFAULT_INCLUDES = -I.
 depcomp = $(SHELL) $(top_srcdir)/src/depcomp
 am__depfiles_maybe = depfiles
@@ -175,7 +180,7 @@ target_alias =
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
-wavedump_SOURCES = mudaq.c PDconfig.c WDplot.c X742CorrectionRoutines.c fft.c keyb.c
+wavedump_SOURCES = mudaq.c MUconfig.c WDplot.c X742CorrectionRoutines.c fft.c keyb.c test.c
 wavedump_LDADD = -lCAENComm -lCAENDigitizer -lm -lpthread
 INCLUDES = -I../inc
 AM_CFLAGS = -fPIC
@@ -254,6 +259,10 @@ clean-binPROGRAMS:
 mudaq$(EXEEXT): $(wavedump_OBJECTS) $(wavedump_DEPENDENCIES) 
 	@rm -f mudaq$(EXEEXT)
 	$(LINK) $(wavedump_OBJECTS) $(wavedump_LDADD) $(LIBS)
+
+test$(EXEEXT): $(test_OBJECTS) $(test_DEPENDENCIES) 
+	@rm -f test$(EXEEXT)
+	$(LINK) $(test_OBJECTS) $(wavedump_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

@@ -126,6 +126,8 @@ typedef struct WaveDumpConfig_t {
     uint8_t GroupWriteMask[MAX_SET];
   int EventsToWrite;
   uint32_t PlotMask;
+  int MajorityTh;
+  int DiscriminatorTh;
 
 } WaveDumpConfig_t;
 

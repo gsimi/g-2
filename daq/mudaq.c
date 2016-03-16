@@ -776,6 +776,7 @@ int main(int argc, char *argv[])
 	DataCorrection_t Table_gr0, Table_gr1;
 
     int  dischandle;
+    int  jdischandle;
 
     printf("\n");
     printf("**************************************************************\n");
@@ -825,7 +826,6 @@ int main(int argc, char *argv[])
         SaveCorrectionTable("table1", Table_gr1);
         // write tables to file
     }
-
     ret = CAEN_DGTZ_OpenDigitizer(WDcfg.LinkType, WDcfg.LinkNum, WDcfg.ConetNode, WDcfg.BaseAddress, &handle);
     if (ret) {
         ErrCode = ERR_DGZ_OPEN;
@@ -938,10 +938,86 @@ Restart:
     PrevRateTime = get_time();
     WDrun.ChannelPlotMask = WDcfg.PlotMask ;
 
-    // program discriminator
+
+
+
+    /*
+      program the jewel discriminator trigger board made by the fantastic duo Borsato Garfagnini
+    */
+
+    printf ("programming discriminator Jewel\n");
+    char *jdiscBaseAddress="FF180000";
+    uint32_t ui=0;
+    sscanf(jdiscBaseAddress,"%x",&ui);
+    if (ret = CAENComm_OpenDevice((CAENComm_ConnectionType)WDcfg.LinkType,WDcfg.LinkNum,WDcfg.ConetNode,ui,&jdischandle)) {
+      ErrCode = ERR_DGZ_OPEN;
+      goto QuitProgram;
+    }
+
+    uint16_t jdiscdata=0;
+    uint32_t jdiscregister=0x0;
+
+    //select the channel
+    int channel=2; //channel=[1:16]
+ 
+    //set the threshold
+    uint16_t channel_mem_offset=4*(channel-1);
+    jdiscregister=0x1000+channel_mem_offset; 
+    float jthreshold=-50; //mV
+    uint16_t DACthreshold=521.3+0.607*jthreshold;
+    printf("setting the jthreshold to %f mV, %d DAC, 0x%x \n",jthreshold,DACthreshold,DACthreshold);
+    CAENComm_Write16(jdischandle, jdiscregister, DACthreshold);
+    //check
+    CAENComm_Read16(jdischandle, jdiscregister, &jdiscdata );
+    printf( "check jdiscdata: write in 0x%x value 0x%x, read 0x%x\n",ui+jdiscregister,DACthreshold,jdiscdata);
+
+    //set the trigger slope
+    jdiscregister=0x2000; 
+    uint16_t channel_bit=0x0001<<(channel-1); 
+    uint16_t tr_slope_mask=0XFFFF & (~channel_bit); //0 = trigger on positive slope,  1 = trigger on negative slope, SET TO 1 THE BITS CORRESPONDING TO THE CHANNELS NOT CONNECTED
+    CAENComm_Write16(jdischandle, jdiscregister, tr_slope_mask );
+    //check
+    CAENComm_Read16(jdischandle, jdiscregister, &jdiscdata );
+    printf( "check jdiscdata: write in 0x%x value 0x%x, read 0x%x\n",ui+jdiscregister,tr_slope_mask,jdiscdata);
+
+    //set the signal delay
+    jdiscregister=0x3000; 
+    uint16_t delay = 0;//1 DAC step = 4.56ns, max 8 bits
+    CAENComm_Write16(jdischandle, jdiscregister, (channel <<2)|delay);//zero delay for ch2
+    //check
+    CAENComm_Read16(jdischandle, jdiscregister, &jdiscdata );
+    printf( "check jdiscdata: write in 0x%x value 0x%x, read 0x%x\n",ui+jdiscregister,(channel <<2)|delay,jdiscdata);
+
+    //set the signal duration
+    jdiscregister=0x4000; 
+    float width=50; // in ns [0:1162]
+    uint16_t DACwidth = (width/4.56);//1 DAC step = 4.56ns, max 8 bits
+    CAENComm_Write16(jdischandle, jdiscregister, (channel <<2)|DACwidth);//zero delay
+    //check
+    CAENComm_Read16(jdischandle, jdiscregister, &jdiscdata );
+    printf( "check jdiscdata: write in 0x%x value 0x%x, read 0x%x\n",ui+jdiscregister,(channel <<2)|DACwidth,jdiscdata);
+
+    // global trigger generation
+    //enable mask: enable channels
+    jdiscregister=0x5000+channel_mem_offset; 
+    uint32_t maskall=1<<16;
+    uint32_t mask_channel=1<<(channel-1);
+    uint32_t trigger_enable_mask=maskall|mask_channel;
+    CAENComm_Write32(jdischandle, jdiscregister, trigger_enable_mask);
+    //check
+    uint32_t jdiscdata32=0;
+    CAENComm_Read32(jdischandle, jdiscregister, &jdiscdata32 );
+    printf( "check jdiscdata: write in 0x%x value 0x%x, read 0x%x\n",ui+jdiscregister,trigger_enable_mask,jdiscdata32);
+
+    if (ret = CAENComm_CloseDevice(jdischandle))
+      goto QuitProgram;
+    
+
+
+    // program V895 discriminator
     printf ("programming discriminator V895\n");
     char *discBaseAddress="00BB0000";
-    uint32_t ui=0;
+    ui=0;
     sscanf(discBaseAddress,"%x",&ui);
     if (ret = CAENComm_OpenDevice((CAENComm_ConnectionType)WDcfg.LinkType,WDcfg.LinkNum,WDcfg.ConetNode,ui,&dischandle)) {
       ErrCode = ERR_DGZ_OPEN;
@@ -961,7 +1037,7 @@ Restart:
     printf( "discdata in FE %x\n",discdata);
 
     discregister=0x00;
-    uint16_t discth=60; //threshold in mv
+    uint16_t discth=WDcfg.DiscriminatorTh; //threshold in mv
     printf("setting thresholds to %d mV \n",discth);
     int discch=0;
     for (discch=0;discch<16;discch++){
@@ -980,8 +1056,11 @@ Restart:
     CAENComm_Write16(dischandle, discregister, 0xFF);
 
     //set the majority 19: >=2 channels, 31 >= 3 channels
+    //44 >= 4 channels
     discregister=0x48;
-    CAENComm_Write16(dischandle, discregister, 19);
+    //CAENComm_Write16(dischandle, discregister, 19);
+    printf("setting the majority threshold to %d\n",WDcfg.MajorityTh);
+    CAENComm_Write16(dischandle, discregister, WDcfg.MajorityTh);
 
     if (ret = CAENComm_CloseDevice(dischandle))
       goto QuitProgram;
