@@ -17,14 +17,14 @@ using namespace std;
   
  */
 
-class csvreader {
+class csvReader {
 public:
-  csvreader(const char* filename);
-  ~csvreader(){delete hph; delete t;};
-  void scanheader(std::ifstream* input);
-  void readhistogram(std::ifstream* input);
+  csvReader(const char* filename, float xscale=1.);
+  ~csvReader(){delete hph; delete t;};
+  void scanHeader(std::ifstream* input, float xscale = 1.);
+  void readHistogram(std::ifstream* input, float xscale = 1.);
   float getNBins(){return npoints;};
-  float getXStep(){return xstep;};
+  float getXStep(){return fabs(xstep);};
   float getXmin(){return xmin-xstep*0.5;};
   float getXmax(){return xmin+xstep*(npoints+0.5);};
   char* getUnit(){return unit;};  TH1F* getHistogram(){return hph;};
@@ -42,7 +42,7 @@ private:
    scan header, 
    initializes histogram and 
    read histogram data */
-csvreader::csvreader(const char* filename){
+csvReader::csvReader(const char* filename, float xscale){
 
   //set default values
   fName=filename;
@@ -56,13 +56,13 @@ csvreader::csvreader(const char* filename){
   std::ifstream input(filename);
 
   //scan header fields
-  scanheader(&input);
+  scanHeader(&input, xscale);
 
 
   //read histogram data
   hph = new TH1F("hph","pulse height distribution",
 		 npoints,xmin,getXmax());
-  readhistogram(&input);
+  readHistogram(&input, xscale);
 
   //close file
   input.close();
@@ -72,7 +72,7 @@ csvreader::csvreader(const char* filename){
   //read header section of csv, until Data keyword is found
   //Saves histogram pararmeters
 void
-csvreader::scanheader(std::ifstream* inputptr){
+csvReader::scanHeader(std::ifstream* inputptr, float xscale){
   std::string line;
   std::string key,val;
   while( std::getline( *inputptr, key ,':') && key.compare("Data")!=0) {
@@ -82,11 +82,13 @@ csvreader::scanheader(std::ifstream* inputptr){
       npoints=atoi(val.c_str());
     
     if (key.compare("XInc")==0)
-      xstep=atof(val.c_str());
+      xstep=atof(val.c_str())*fabs(xscale);
 
-    if (key.compare("XOrg")==0)
-      xmin=atof(val.c_str());
-
+    if (key.compare("XOrg")==0){
+      float xorg=atof(val.c_str());
+      xmin = xscale>0 ? xorg : xorg*xscale - (npoints-1)*xstep ;
+    }
+    
     if (key.compare("XUnits")==0)
       unit=val.c_str();
   }
@@ -96,7 +98,7 @@ csvreader::scanheader(std::ifstream* inputptr){
 
 
 /* Read the csv and fills the histogram */
-void csvreader::readhistogram(std::ifstream *inputptr){
+void csvReader::readHistogram(std::ifstream *inputptr, float xscale){
 
   float x,y;
   int bin;
@@ -105,19 +107,20 @@ void csvreader::readhistogram(std::ifstream *inputptr){
   while( std::getline( *inputptr, line ) ) {
     sscanf(line.c_str(),"%f,%f",&x,&y);
     //    printf("%f    %f\n",x,y);
-    bin = hph->FindBin(x);
+    bin = hph->FindBin(x*xscale);
     hph->SetBinContent(bin,y);
   }
   //  fclose(pFile);    
   if (!inputptr->eof()) std::cout<<"Error reading "<<filename<<endl;
 }
 
-TTree* csvreader::getTree(){
+/*
+TTree* csvReader::getTree(float xscale){
   //open stream
   std::ifstream input(fName);
 
   //scan header fields
-  scanheader(&input);
+  scanHeader(&input, xscale);
 
   //read data in TTree, determine min and max
   t=new TTree;
@@ -125,7 +128,7 @@ TTree* csvreader::getTree(){
   input.close();
   return t;
 }
-
+*/
 
 
 //helper function

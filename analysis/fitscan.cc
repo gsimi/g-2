@@ -19,9 +19,10 @@
 #include <algorithm>
 using namespace std;
 
+
 TF1* fitscan(const char * csvname){
   gROOT->ProcessLine(".L readcsv.C");
-  csvreader *csv = new csvreader(csvname);
+  csvReader *csv = new csvReader(csvname,-1.);
   return fitscan(csv->getHistogram());
 }
 
@@ -51,8 +52,10 @@ fitscan(TH1F* h,
 
   */
   
-  TSpectrum pf(8,1e-3);
-  pf.Search(h,2,"nobackground");
+  TSpectrum pf(8);
+  TH1F* hsmooth=(TH1F*)h->Clone("hsmooth");
+  hsmooth->Smooth();
+  pf.Search(hsmooth,2,"nobackground",1e-2);
   pf.Print("V");
 
   /*
