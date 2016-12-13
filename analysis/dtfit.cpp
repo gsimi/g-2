@@ -72,11 +72,11 @@ void plot ( string fileName, bool clock_counts=false ){
     ffitmuplus->SetParameters(10,100,2);
     dtmuplus->Fit(ffitmuplus,"l","",tmin,tmax);
     
-    tmin=0;
+    tmin=time_calib_q;
     nbins=1000;
     bw=(tmax-tmin)/nbins;
 
-    dtmu = new TH1F("dtmupm","Segnali mu+ e mu-",nbins,tmin,tmax);	
+    dtmu = new TH1F("dtmupm","Segnali mu+ e mu-",nbins,tmin-bw/2,tmax-bw/2);	
     for (unsigned int i=0; i<xV.size(); i++) {
       dtmu->Fill(xV[i]);
     }
@@ -90,9 +90,9 @@ void plot ( string fileName, bool clock_counts=false ){
 
     dtmu->GetXaxis()->SetTitle("t (microsecondi)");
     dtmu->GetYaxis()->SetTitle("conteggi");
-    dtmu->Fit(ffitmu,"l0","",tmin,tmax);
+    dtmu->Fit(ffitmu,"l","",tmin,tmax);
 
-    
+    dtmuplus->Draw("e");
     
     return;
    
