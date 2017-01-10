@@ -1,0 +1,2 @@
+#!/bin/bash
+ssh root@10.42.0.10  cat  /sys/devices/soc0/tc_measuretime@0/measure > measure ; wc measure

@@ -1,0 +1,58 @@
+########################################################################
+#                                                                      
+#              --- CAEN SpA - Computing Division ---                   
+#                                                                      
+#   CAENVMElib Software Project                                        
+#                                                                      
+#   Created  :  March 2004      (Rel. 1.0)                                             
+#                                                                      
+#   Auth: S. Coluccini                                                 
+#                                                                      
+########################################################################
+
+EXE	=	CAENVMEDemo
+
+DISCREXE =      discrConfig
+
+CC	=	gcc
+
+COPTS	=	-fPIC -DLINUX -Wall 
+#COPTS	=	-g -fPIC -DLINUX -Wall 
+
+FLAGS	=	-Wall -s
+#FLAGS	=	-Wall
+
+DEPLIBS	=       -l CAENVME -l ncurses -lc -lm
+
+LIBS	=	
+
+INCLUDEDIR =	-I.
+
+OBJS	=	CAENVMEDemoMain.o CAENVMEDemoVme.o console.o
+
+DISCROBJS =     discrConfig.o
+
+INCLUDES =	../inc/CAENVMElib.h ../inc/CAENVMEtypes.h ../inc/CAENVMEoslib.h console.h
+
+#########################################################################
+
+all	:	$(EXE) $(DISCREXE)
+
+clean	:
+		/bin/rm -f $(OBJS) $(EXE) $(DISCREXE)
+
+$(EXE)	:	$(OBJS)
+		/bin/rm -f $(EXE)
+		$(CC) $(FLAGS) -o $(EXE) $(OBJS) $(DEPLIBS)
+
+$(DISCREXE) :   $(DISCROBJS)
+	        /bin/rm -f $(DISCREXE)
+		$(CC) $(FLAGS) -o $(DISCREXE) $(DISCROBJS) $(DEPLIBS)
+
+$(OBJS)	:	$(INCLUDES) Makefile
+
+$(DISCROBJS) :	Makefile
+
+%.o	:	%.c
+		$(CC) $(COPTS) $(INCLUDEDIR) -c -o $@ $<
+

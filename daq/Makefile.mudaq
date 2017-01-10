@@ -34,8 +34,6 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 subdir = src
-DIST_COMMON = $(dist_data_DATA) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in depcomp install-sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -47,13 +45,13 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(datadir)"
 bin_PROGRAMS = mudaq$(EXEEXT) test$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 MainProgram = mudaq
-am_wavedump_OBJECTS = $(MainProgram).$(OBJEXT) MUconfig.$(OBJEXT) \
+am_wavedump_OBJECTS = $(MainProgram).$(OBJEXT) muconfig.$(OBJEXT) \
 	WDplot.$(OBJEXT) X742CorrectionRoutines.$(OBJEXT) \
 	fft.$(OBJEXT) keyb.$(OBJEXT) 
 wavedump_OBJECTS = $(am_wavedump_OBJECTS)
 wavedump_DEPENDENCIES =
 MainProgram2 = test
-test_OBJECTS = $(MainProgram2).$(OBJEXT) MUconfig.$(OBJEXT) \
+test_OBJECTS = $(MainProgram2).$(OBJEXT) muconfig.$(OBJEXT) \
 	WDplot.$(OBJEXT) X742CorrectionRoutines.$(OBJEXT) \
 	fft.$(OBJEXT) keyb.$(OBJEXT) 
 test_DEPENDENCIES =
@@ -91,7 +89,7 @@ am__base_list = \
 DATA = $(dist_data_DATA)
 ETAGS = etags
 CTAGS = ctags
-DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+DISTFILES = $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = ${SHELL} /home/lhcb/CAEN/Wavedump/wavedump-3.5.3/src/missing --run aclocal-1.11
 AMTAR = ${SHELL} /home/lhcb/CAEN/Wavedump/wavedump-3.5.3/src/missing --run tar
 AUTOCONF = ${SHELL} /home/lhcb/CAEN/Wavedump/wavedump-3.5.3/src/missing --run autoconf
@@ -180,7 +178,7 @@ target_alias =
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
-wavedump_SOURCES = mudaq.c MUconfig.c WDplot.c X742CorrectionRoutines.c fft.c keyb.c test.c
+wavedump_SOURCES = mudaq.c muconfig.c WDplot.c X742CorrectionRoutines.c fft.c keyb.c test.c
 wavedump_LDADD = -lCAENComm -lCAENDigitizer -lm -lpthread
 INCLUDES = -I../inc
 AM_CFLAGS = -fPIC

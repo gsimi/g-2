@@ -1,0 +1,3 @@
+#!/bin/bash
+
+awk 'START{i=0; sum=0; ns=0;} {if ($1<650) {sum=sum+$1; ns=ns+1;} i=i+1; } END{ average=sum/i; print "average = ",average,"\n"; print "eff = ",ns,"/",i," = ",ns/i*100,"%\n"}' measure

@@ -7,7 +7,8 @@
 using namespace std;
 void plot ( string fileName, bool clock_counts=false ){
   /* calibration */
-  float time_calib_m=14.988e-3, time_calib_q=9.6e-3;// [microsec/clock count]
+  //  float time_calib_m=14.988e-3, time_calib_q=9.6e-3;// [microsec/clock count]  calibration using signal generator without trigger board
+  float time_calib_m=14.879e-3, time_calib_q=7.1e-3;// [microsec/clock count] calibratoin with trigger board, computed for t<=1microsec
   /* configuration */
   float tmin=1, tmax=1e3*time_calib_m+time_calib_q; //[microseconds]
   int nbins=25;

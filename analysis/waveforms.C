@@ -526,3 +526,52 @@ void stageLeo(){
   //c->SaveAs("data/stage_pulse_height_leo.png");
   
 }
+
+
+
+void stage2016(bool save=false){
+  TCanvas *c=new TCanvas("c","c",800,600);
+  channel ch("../results/stage/wave_1_40.dat","../results/stage/wave_2_40.dat");
+  ch.plot(5);
+  if (save){
+     c->SaveAs("../results/stage/stage2016_pulse_shape.eps");
+     c->SaveAs("../results/stage/stage2016_pulse_shape.png");
+  }
+  //c->SetLogy(1);
+  
+  TH1F* h = pulseheight("../results/stage/wave_1_40.dat","../results/stage/wave_2_40.dat",minval,200,600);
+  TH1F* th=(TH1F*)gROOT->FindObjectAny("th");
+  th->GetXaxis()->SetTitle("time (1 unit = 0.2 ns)");
+
+  if (th!=nullptr){
+    th->Fit("gaus","","",200,600);
+    th->Draw("e");
+    if (save){
+       c->SaveAs("../results/stage/stage2016_pulse_time.eps");
+       c->SaveAs("../results/stage/stage2016_pulse_time.png");
+    }
+  }
+      
+  h->GetXaxis()->SetTitle("pulse height (1 unit = 0.24 mV)");
+  h->Rebin(4);
+  float bw=h->GetBinWidth(0);
+  
+  double xmin=h->GetXaxis()->GetXmin();
+  double xmax=h->GetXaxis()->GetXmax();  
+  TF1 *f1 = new TF1("f1","[0]*[3]*TMath::Landau(x,[1],[2])",xmin,xmax);
+  
+  f1->SetParameters(3000,(xmax-xmin)/2,(xmax-xmin)/2,bw);
+  f1->SetParameter(1, 450);
+  f1->SetParameter(2, 1000);
+  f1->FixParameter(3,bw);
+
+  gStyle->SetOptFit(1);
+  c->SetLogy(0);
+  //h->Fit(f1,"l","",xmin,xmax);
+  h->Draw("e");
+  if (save){
+       c->SaveAs("../results/stage/stage2016_pulse_height.eps");
+       c->SaveAs("../results/stage/stage2016_pulse_height.png");
+  }
+  
+}
