@@ -1,3 +1,7 @@
 #!/bin/bash
 
-awk 'START{i=0; sum=0; ns=0;} {if ($1<650) {sum=sum+$1; ns=ns+1;} i=i+1; } END{ average=sum/i; print "average = ",average,"\n"; print "eff = ",ns,"/",i," = ",ns/i*100,"%\n"}' measure
+#to be used with repetition frequency ~ 100kHz
+#awk 'START{i=0; sum=0; ns=0;} {if ($1<650) {sum=sum+$1; ns=ns+1;} i=i+1; } END{ average=sum/ns; print "average = ",average,"\n"; print "eff = ",ns,"/",i," = ",ns/i*100,"%\n"}' measure
+
+# to be used with repetition frquency <100Khz
+awk 'START{i=0; sum=0; ns=0;} {if ($1<1000) {sum=sum+$1; ns=ns+1;} i=i+1; } END{ average=sum/ns; print "average = ",average,"\n"; print "eff = ",ns,"/",i," = ",ns/i*100,"%\n"}' measure
