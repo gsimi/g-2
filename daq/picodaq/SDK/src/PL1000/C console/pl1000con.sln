@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{21A92DD9-A90A-49B0-8496-DA1B1B86EB7C}") = "pl1000con", "pl1000con.vcxproj", "{DCBE4F87-974A-4A2D-8174-B2021648BE9D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DCBE4F87-974A-4A2D-8174-B2021648BE9D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DCBE4F87-974A-4A2D-8174-B2021648BE9D}.Debug|Win32.Build.0 = Debug|Win32
+		{DCBE4F87-974A-4A2D-8174-B2021648BE9D}.Debug|x64.ActiveCfg = Debug|x64
+		{DCBE4F87-974A-4A2D-8174-B2021648BE9D}.Debug|x64.Build.0 = Debug|x64
+		{DCBE4F87-974A-4A2D-8174-B2021648BE9D}.Release|Win32.ActiveCfg = Release|Win32
+		{DCBE4F87-974A-4A2D-8174-B2021648BE9D}.Release|Win32.Build.0 = Release|Win32
+		{DCBE4F87-974A-4A2D-8174-B2021648BE9D}.Release|x64.ActiveCfg = Release|x64
+		{DCBE4F87-974A-4A2D-8174-B2021648BE9D}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

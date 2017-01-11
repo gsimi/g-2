@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C# Express 2010
+Project("{56D36768-C5EE-468A-BCA1-55227DBC1B20}") = "PS2000CSconsole", "PS2000CSconsole.csproj", "{CA4F3327-59BB-405E-8E55-CAFB6DC73CE8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CA4F3327-59BB-405E-8E55-CAFB6DC73CE8}.Debug|x86.ActiveCfg = Debug|x86
+		{CA4F3327-59BB-405E-8E55-CAFB6DC73CE8}.Debug|x86.Build.0 = Debug|x86
+		{CA4F3327-59BB-405E-8E55-CAFB6DC73CE8}.Release|x86.ActiveCfg = Release|x86
+		{CA4F3327-59BB-405E-8E55-CAFB6DC73CE8}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

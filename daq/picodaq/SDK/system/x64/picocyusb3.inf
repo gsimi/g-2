@@ -1,0 +1,127 @@
+;---------------------------------------------------------------;
+; PICOCyUSB3.INF
+;	-Installs winusb support for Pico USB devices;
+;
+; Copyright © 1995-2015, Pico Technology Ltd
+;
+;	www.picotech.com	www.drdaq.com
+; 
+;---------------------------------------------------------------;
+
+[Version] 
+Signature = "$Windows NT$" 
+Class = DataAcquisitionDevices
+ClassGuid = {745DD1A8-FCA4-4659-9DF2-954176705158}
+Provider = %Pico% 
+CatalogFile=picocyusb3.cat
+DriverVer=04/07/2015,1.2.6.9
+
+; ========== Manufacturer/Models sections =========== 
+
+[Manufacturer] 
+%Pico%=PicoDevices,NTx86,NTamd64,NTx86.6.2,NTamd64.6.2,NTIA64
+
+[PicoDevices.NTx86]
+%USB\VID_0CE9&PID_1201.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1200
+%USB\VID_0CE9&PID_1201.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1201
+%USB\VID_0CE9&PID_1211.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1211
+%USB\VID_0CE9&PID_1213.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1213
+%USB\VID_0CE9&PID_1202.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1202
+%USB\VID_0CE9&PID_1203.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1203
+%USB\VID_0CE9&PID_1204.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1204
+%USB\VID_0CE9&PID_1212.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1212
+
+[PicoDevices.NTamd64]
+%USB\VID_0CE9&PID_1201.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1200
+%USB\VID_0CE9&PID_1201.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1201
+%USB\VID_0CE9&PID_1211.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1211
+%USB\VID_0CE9&PID_1202.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1202
+%USB\VID_0CE9&PID_1212.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1212
+%USB\VID_0CE9&PID_1213.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1213
+%USB\VID_0CE9&PID_1203.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1203
+%USB\VID_0CE9&PID_1204.DeviceDesc%=USB_Install, USB\VID_0CE9&PID_1204
+
+[PicoDevices.NTIA64]
+[PicoDevices.NTamd64.6.2]
+[PicoDevices.NTx86.6.2]
+
+[DestinationDirs]
+DefaultDestDir=10,System32\drivers     
+CoInstallers_CopyFiles = 11
+
+; ========== DataAcquisitionDevices Class ===========
+
+[ClassInstall32]
+AddReg=DevicesClass_RegistryAdd
+
+[DevicesClass_RegistryAdd]
+HKR,,,,%ClassName%
+HKR,,Icon,,"-20"
+
+; ==============Installation----------------
+[USB_Install]
+CopyFiles=USB_InstallCopyFiles
+
+[USB_Install.HW]
+AddReg=USB_AddReg
+
+[USB_AddReg]
+HKR,,DriverGUID,,%GUID%
+HKR,,"RemovalPolicy",0x00010001,3
+
+[USB_InstallCopyFiles]
+CyUSB3.sys,,,2
+
+[USB_Install.Services]
+AddService=CyUSB,2,USB_DriverService
+
+[USB_DriverService]
+DisplayName     = %PicoCyUSB_SvcDesc%
+ServiceType=1                           ;;kernel mode driver
+StartType=3                             ;;start on demand
+ErrorControl=1                          ;;normal error handling.
+ServiceBinary=%10%\system32\drivers\CyUSB3.sys
+LoadOrderGroup = Base
+
+; ============ Cointsller=========
+[USB_Install.CoInstallers]
+AddReg=CoInstallers_AddReg
+CopyFiles=CoInstallers_CopyFiles
+
+[CoInstallers_CopyFiles]
+WdfCoInstaller01009.dll
+
+[CoInstallers_AddReg]
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller01009.dll,WdfCoInstaller"
+
+[USB_Install.Wdf]
+KmdfService = CyUSB, CyUSB_wdfsect
+
+[CyUSB_wdfsect]
+KmdfLibraryVersion = 1.9
+
+[SourceDisksFiles]
+WdfCoInstaller01009.dll=1
+CyUSB3.sys=1
+
+[SourceDisksNames]
+1=,,,
+
+; =================== Strings =================== 
+[Strings] 
+Pico="Pico Technology Ltd"
+USB\VID_0CE9&PID_1200.DeviceDesc="PicoScope 2000 series PC Oscilloscope"
+USB\VID_0CE9&PID_1201.DeviceDesc="PicoScope 3000 series PC Oscilloscope"
+USB\VID_0CE9&PID_1211.DeviceDesc="PicoScope 3000 series PC Oscilloscope"
+USB\VID_0CE9&PID_1213.DeviceDesc="PicoScope 3000 series PC Oscilloscope"
+USB\VID_0CE9&PID_1202.DeviceDesc="PicoScope 4000 series PC Oscilloscope"
+USB\VID_0CE9&PID_1212.DeviceDesc="PicoScope 4000 series PC Oscilloscope"
+USB\VID_0CE9&PID_1203.DeviceDesc="PicoScope 5000 series PC Oscilloscope"
+USB\VID_0CE9&PID_1204.DeviceDesc="PicoScope 6000 series PC Oscilloscope"
+
+PicoCyUSB_SvcDesc="Pico CyUSB driver service"
+ClassName="Pico Technology Instruments"
+GUID="{4AA176D7-28A1-4D0D-85A7-F989D9B40741}"
+
+
+

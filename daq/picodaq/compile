@@ -1,0 +1,3 @@
+rm -rf PicoScope.out
+
+g++ -Wall `root-config --cflags` -I/opt/picoscope/include/ -L/opt/picoscope/lib/ -std=c++0x main.cc Event.cc InfoAcq.cc DeviceManager.cc -lps5000a `root-config --libs` -o picodaq
