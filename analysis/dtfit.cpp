@@ -10,7 +10,7 @@ void plot ( string fileName, bool clock_counts=false ){
   //  float time_calib_m=14.988e-3, time_calib_q=9.6e-3;// [microsec/clock count]  calibration using signal generator without trigger board
   float time_calib_m=15.00e-3, time_calib_q=0.119e-3;// [microsec/clock count] calibratoin with trigger board, computed for t>=0.5microsec, [10/1/2017]
   /* configuration */
-  float tmin=0.5, tmax=1e3*time_calib_m+time_calib_q; //[microseconds]
+  float tmin=1, tmax=1e3*time_calib_m+time_calib_q; //[microseconds]
   int nbins=25;
 
   TH1F *dtraw, *dtmuplus, *dtmu;
