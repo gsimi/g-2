@@ -1,11 +1,16 @@
+#include <stdint.h>
+//typedef  char int8_t;
+// typedef  short int16_t;
+// typedef  unsigned short uint16_t;
+// typedef  int int32_t;
+// typedef  unsigned int uint32_t;
+// typedef  unsigned long long uint64_t;
+// typedef  long long int64_t;
 
-typedef  char int8_t;
-typedef  short int16_t;
-typedef  unsigned short uint16_t;
-typedef  int int32_t;
-typedef  unsigned int uint32_t;
-typedef  unsigned long long uint64_t;
-typedef  long long int64_t;
+#include "TFile.h"
+#include "TGraph.h"
+#include "TH1F.h"
+#include "TCanvas.h"
 
 #include "InfoAcq.cc"
 #include "Event.cc"
@@ -122,25 +127,35 @@ void ReadTree(const char *fileName, int i, bool negative=false) {
 	timeDistr->SetNameTitle("Time Distribution","Time Distribution");
 	
 	// spettro in energia
-	TH1F* spectrumIntegral = new TH1F( "Integral Spectrum", "Integral Spectrum", 200, negative? -5e4:-1e3, negative? 1e3:5e4 );
+	TH1F* spectrumIntegral = new TH1F( "hInt", "Integral Spectrum", 200, negative? -5e4:-1e3, negative? 1e3:5e4 );
+	TH1F* spectrumIntegralMissed = new TH1F( "hIntMiss", "Integral Spectrum of missed events", 200, -5e4, 5e4 );
 	float xmin= negative? adc_to_mv(sampSet.max_adc_value,chSet1.range,-1*sampSet.max_adc_value) : 0 ; 
 	float xmax = negative? 0 : adc_to_mv(sampSet.max_adc_value,chSet1.range,sampSet.max_adc_value) ;
-	TH1F* spectrumMaximum = new TH1F( "Maximum Spectrum", "Maximum Spectrum", 200, xmin,xmax );
-	int sign = negative? -1:1;
-	
+	TH1F* spectrumMaximum = new TH1F( "hMax", "Maximum Spectrum", 90, xmin,xmax );
+	TH1F* spectrumMaximumMissed = new TH1F( "hMaxMiss", "Maximum Spectrum of missed events", 180,
+						-adc_to_mv(sampSet.max_adc_value,chSet1.range,sampSet.max_adc_value),
+						adc_to_mv(sampSet.max_adc_value,chSet1.range,sampSet.max_adc_value) );
+	TH1F* spectrumMaximumSig = new TH1F( "hMaxSig", "Maximum Spectrum of signal events", 180,
+						-adc_to_mv(sampSet.max_adc_value,chSet1.range,sampSet.max_adc_value),
+						adc_to_mv(sampSet.max_adc_value,chSet1.range,sampSet.max_adc_value) );
 	for (Long64_t index=0; index<nEvt; index++) {
 	  //	  if(index%2 == 0 ) continue;
 		treeEvt->GetEntry(index);
 		for (int ii=0; ii<sampSet.samplesStoredPerEvent; ii++) {
 		  float value =  adc_to_mv(sample[ii],chSet1.range,sampSet.max_adc_value);
+		  //printf ("valure :%f\n",value);
 		  integral += value;
 			if (value > maximum) maximum = value ;
 			if (value < minimum) minimum = value ;
 		}
-		if (integral*sign > 0 && integral*sign < 1.1e6) {
-			daVedere = index;
-			spectrumIntegral->Fill(integral);
-			spectrumMaximum->Fill(negative?minimum:maximum);
+		daVedere = index;
+		spectrumIntegral->Fill(integral);
+		spectrumMaximum->Fill(negative?minimum:maximum);
+		if(negative? minimum > -50 : maximum < 50){
+		  spectrumIntegralMissed->Fill(integral);
+		  spectrumMaximumMissed->Fill(negative?minimum:maximum);
+		} else {
+		  spectrumMaximumSig->Fill(negative?minimum:maximum);
 		}
 		integral = 0.0;
 		maximum = 0.0;
@@ -191,6 +206,9 @@ void ReadTree(const char *fileName, int i, bool negative=false) {
 	spectrumMaximum->SetXTitle("Maximum (mV)");
 	spectrumMaximum->SetYTitle("Frequency");
 	spectrumMaximum->Draw();
+	printf("# signals =%f, efficiency %f \%\n",
+	       spectrumMaximumSig->GetEntries(),
+	       spectrumMaximumSig->GetEntries()/waveformStored*100);
 
 /**/
 }
@@ -199,6 +217,7 @@ void ReadTree(const char *fileName, int i, bool negative=false) {
 
 
 
+void
 viewEvent(TFile* input_file, int i){
 
 	// dichiaro le struct
@@ -265,12 +284,6 @@ viewEvent(TFile* input_file, int i){
 	treeRTI->SetBranchAddress("WaveformStored",&waveformStored);
 
 
-	Long64_t nRTI = treeRTI->GetEntries();
-	Long64_t nEvt = treeEvt->GetEntries();
-	float integral = 0.0;
-	float maximum = 0.0;
-	float minimum = 0.0;
-
 	int daVedere = i;
 
 	// leggo e disegno un evento
@@ -297,7 +310,6 @@ viewEvent(TFile* input_file, int i){
 	signal->SetXTitle("Instant (ns)");
 	signal->SetYTitle("Amplitude (mV)");
 	signal->Draw();
-
 
 /**/
 }
