@@ -52,7 +52,7 @@ public:
 	};
 
 public:
-	DeviceManager();
+	DeviceManager(const char* config_file);
 	virtual ~DeviceManager();
 
 	/*FUNZIONI PER LA GESTIONE DEL DEVICE*/
@@ -61,7 +61,7 @@ public:
 	void set_info();
 	PICO_STATUS changePowerSource(PICO_STATUS status);
 	PICO_STATUS setChannels();
-	PICO_STATUS setChannelsFromFile();
+	PICO_STATUS setChannelsFromFile(const char* config_file);
 	PICO_STATUS setSimpleTrigger(int16_t * trigger,PS5000A_THRESHOLD_DIRECTION * triggerDirections,float * triggerThresholdMV,int16_t ntriggering);
 
 	void Run();

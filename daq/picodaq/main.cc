@@ -12,7 +12,7 @@
 
 using namespace std;
 
-int main() {
+int main(int argc, char** argv) {
 
 	cout << "PS5244B program\n";
 	cout << "Made by Carlo Poggi\n";
@@ -31,7 +31,9 @@ int main() {
 	/*GESTIONE DELL'OSCILLOSCOPIO*/
 //	cout << "Connect the device and press any key\n";
 //	getchar();
-	DeviceManager* manager = new DeviceManager(); // nel costruttore sono incluse le funzioni per aprire il device e inizializzare i canali
+	char* config_file=(char*)"config.txt";
+	if (argc>1) config_file=argv[1];
+	DeviceManager* manager = new DeviceManager(config_file); // nel costruttore sono incluse le funzioni per aprire il device e inizializzare i canali
 
 	manager->FillStructsInfoAcq();
 	manager->PrintInfo();

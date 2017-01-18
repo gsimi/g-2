@@ -40,7 +40,7 @@ int32_t _kbhit()
 }
 
 
-DeviceManager::DeviceManager() {
+DeviceManager::DeviceManager(const char* config_file) {
 	// TODO Auto-generated constructor stub
 	g_ready = false;
 
@@ -78,7 +78,7 @@ DeviceManager::DeviceManager() {
 
 	cout << "Apro il device e lo configuro\n";
 	openDevice();
-	setChannelsFromFile();
+	setChannelsFromFile(config_file);
 
 	cout << "Creo oggetto Event\n";
 	evt = new Event(s_info->samplesStored);
@@ -638,7 +638,7 @@ PICO_STATUS DeviceManager::setChannels()
 /****************************************************************************
 * setChannels A and B from file config
 ****************************************************************************/
-PICO_STATUS DeviceManager::setChannelsFromFile()
+PICO_STATUS DeviceManager::setChannelsFromFile(const char* config_file)
 {
 	PICO_STATUS status;
 	int16_t * trigger = new int16_t[2];
@@ -650,7 +650,7 @@ PICO_STATUS DeviceManager::setChannelsFromFile()
 	int8_t ch = '.';
 
 	ifstream config;
-	config.open("config");
+	config.open(config_file);
 
 	printf("\nSetting channels...\n");
 
