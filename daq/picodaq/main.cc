@@ -29,8 +29,8 @@ int main() {
 	}
 
 	/*GESTIONE DELL'OSCILLOSCOPIO*/
-	cout << "Connect the device and press any key\n";
-	getchar();
+//	cout << "Connect the device and press any key\n";
+//	getchar();
 	DeviceManager* manager = new DeviceManager(); // nel costruttore sono incluse le funzioni per aprire il device e inizializzare i canali
 
 	manager->FillStructsInfoAcq();
@@ -45,5 +45,6 @@ int main() {
 	manager->~DeviceManager();
 
 	cout << "Fine\n";
+
 	return 0;
 }

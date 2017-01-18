@@ -29,7 +29,7 @@ void Event::FillEvent(uint64_t evtNumber, int64_t time, int16_t measureUnit, int
 	instant = time;
 	timeUnit = measureUnit;
 
-	for (uint32_t i = 0; i<samplesStored; i++) {
+	for (int32_t i = 0; i<samplesStored; i++) {
 		sample[i] = values[i];
 	}
 
@@ -61,7 +61,7 @@ void Event::PrintEvent(const uint32_t min, const uint32_t max) {
 	cout << "Trigger instant\t" << instant << endl;
 	cout << "Time unit\t" << timeUnit << endl << endl;
 
-	if (max > samplesStored) cout << "MAX PRINT RANGE MUST BE LESS THAN " << samplesStored << endl;
+	if (max > (uint32_t)samplesStored) cout << "MAX PRINT RANGE MUST BE LESS THAN " << samplesStored << endl;
 	else for (uint32_t i = min; i<max; i++) cout << "Sample\t" << i << "\t" << sample[i] << endl;
 
 }

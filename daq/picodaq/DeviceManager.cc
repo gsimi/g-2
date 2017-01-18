@@ -9,6 +9,7 @@
 
 #include <string>
 #include <chrono>
+#include <fstream>
 
 bool g_ready = false;
 
@@ -77,7 +78,7 @@ DeviceManager::DeviceManager() {
 
 	cout << "Apro il device e lo configuro\n";
 	openDevice();
-	setChannels();
+	setChannelsFromFile();
 
 	cout << "Creo oggetto Event\n";
 	evt = new Event(s_info->samplesStored);
@@ -198,18 +199,12 @@ void DeviceManager::set_info()
 ******************************************************************************************/
 PICO_STATUS DeviceManager::changePowerSource(PICO_STATUS status)
 {
-	int8_t ch;
+	int8_t ch = 0;
 
 	switch (status)
 	{
 		case PICO_POWER_SUPPLY_NOT_CONNECTED:			// User must acknowledge they want to power via USB
-			do
-			{
-				printf("\n5V power supply not connected.");
-				printf("\nDo you want to run using USB only Y/N?\n");
-				ch = toupper(getchar());
-				if(ch == 'Y')
-				{
+
 					printf("\nPowering the unit via USB\n");
 					status = ps5000aChangePowerSource(unit->handle, PICO_POWER_SUPPLY_NOT_CONNECTED);		// Tell the driver that's ok
 
@@ -227,11 +222,6 @@ PICO_STATUS DeviceManager::changePowerSource(PICO_STATUS status)
 						// Do nothing
 					}
 
-				}
-			}
-			while(ch != 'Y' && ch != 'N');
-			printf(ch == 'N'?"Please use the +5V power supply to power this unit\n":"");
-			break;
 
 		case PICO_POWER_SUPPLY_CONNECTED:
 			printf("\nUsing +5V power supply voltage\n");
@@ -632,6 +622,7 @@ PICO_STATUS DeviceManager::setChannels()
 	printf("Insert number of waveforms to acquire: ");
 	while (nMaxSignals <= 0) {
 		cin >> nMaxSignals;
+		cin.ignore();
 	}
 
 	s_info->durata_s = durata;
@@ -643,6 +634,374 @@ PICO_STATUS DeviceManager::setChannels()
 
 	return PICO_OK;
 }
+
+/****************************************************************************
+* setChannels A and B from file config
+****************************************************************************/
+PICO_STATUS DeviceManager::setChannelsFromFile()
+{
+	PICO_STATUS status;
+	int16_t * trigger = new int16_t[2];
+	trigger[0] = 0;
+	trigger[1] = 0;
+	PS5000A_THRESHOLD_DIRECTION triggerDirections[2];
+	float triggerThresholdsMV[2] = {0.0,0.0};
+	float analogueOffsetMV[2] = {0.0,0.0};
+	int8_t ch = '.';
+
+	ifstream config;
+	config.open("config");
+
+	printf("\nSetting channels...\n");
+
+	do
+	{
+		for (int32_t inCh = 0; inCh < 2; inCh++) {
+
+			printf("\nDo you want to enable channel %c? Y/N\n",'A'+inCh);
+			int8_t chEnable;
+
+			config >> chEnable;
+			chEnable = toupper(chEnable);
+
+			if (chEnable == 'Y') {
+
+				printf("\nEnabling channel %c...\n",'A'+inCh);
+				unit->channelSettings[inCh].enabled = 1;
+
+				// Accoppiamento AC-DC
+				printf("\nSelect coupling:\n");
+				printf("A - AC coupling\n");
+				printf("D - DC coupling\n");
+				config >> ch;
+				ch = toupper(ch);
+
+				if (ch == 'A') {
+					printf("AC coupling selected\n");
+					unit->channelSettings[inCh].DCcoupled = PS5000A_AC;
+				}
+				else {
+					printf("DC coupling selected\n");
+					unit->channelSettings[inCh].DCcoupled = PS5000A_DC;
+				}
+
+				// Range del canale
+				printf("\nSelect range:\n");
+				printf("1: +/- 10 mV					7: +/- 1 V\n");
+				printf("2: +/- 20 mV					8: +/- 2 V\n");
+				printf("3: +/- 50 mV					9: +/- 5 V\n");
+				printf("4: +/- 100 mV					10: +/- 10 V\n");
+				printf("5: +/- 200 mV					11: +/- 20 V\n");
+				printf("6: +/- 500 mV\n");
+
+				int32_t range;
+
+				config >> range;
+
+				printf("Selected range %i\n",range);
+				unit->channelSettings[inCh].range = int16_t(range)-1;
+
+				printf("\nDo you want to set an analogue offset?\n");
+				config >> ch;
+				ch = toupper(ch);
+
+				if (ch == 'N') unit->channelSettings[inCh].analogueOffset = 0.0;
+
+				else if (ch == 'Y') {
+
+					float maximumVoltage = 0.0;
+					float minimumVoltage = 0.0;
+
+					status = ps5000aGetAnalogueOffset(unit->handle,psRanges[unit->channelSettings[inCh].range],unit->channelSettings[inCh].DCcoupled,&maximumVoltage,&minimumVoltage);
+
+					printf("\nSet analogue offset for channel %c (mV):\n",'A'+inCh);
+					printf("Offset must be between %f mV ",minimumVoltage);
+					printf("and %f mV\n",maximumVoltage);
+					float tmp = 0.0;
+					config >> tmp;
+					printf("Offset chosen: %f\n",tmp);
+
+					analogueOffsetMV[inCh] = tmp;
+					s_info->channelSettings[inCh].analogueOffset = analogueOffsetMV[inCh];
+					unit->channelSettings[inCh].analogueOffset = analogueOffsetMV[inCh];
+					cout << "ANALOGUE OFFSET\t" << s_info->channelSettings[inCh].analogueOffset << endl;
+
+				}
+
+				// Direzione trigger del canale
+				printf("\nSet trigger for channel %c?\n",'A'+inCh);
+				config >> ch;
+				ch = toupper(ch);
+
+				if (ch == 'Y') {
+
+					s_info->triggerSettings[inCh].triggerSet = 1;
+					trigger[inCh] = 1;
+					printf("\nSet trigger direction for channel %c:\n",'A'+inCh);
+					printf("R - Rising\n");
+					printf("F - Falling\n");
+
+					config >> ch;
+					ch = toupper(ch);
+
+					while ((ch != 'R') && (ch != 'F')) {
+						printf("Insert correct option\n");
+						config >> ch;
+						ch = toupper(ch);
+					}
+
+					cout <<"Selected " << ch << " case\n";
+
+					if (ch == 'R') triggerDirections[inCh] = PS5000A_RISING;
+					if (ch == 'F') triggerDirections[inCh] = PS5000A_FALLING;
+
+					s_info->triggerSettings[inCh].triggerDirection = triggerDirections[inCh];
+
+					if ((ch == 'R') || (ch == 'F')) {
+
+						printf("\nSet trigger threshold for channel %c (mV):\n",'A'+inCh);
+						printf("Threshold must be in range +/- %i mV\n",psRangesMV[unit->channelSettings[inCh].range]);
+						float tmp;
+						config >> tmp;
+
+						printf("Threshold chosen: %f\n",tmp);
+
+						while (tmp >= psRangesMV[unit->channelSettings[inCh].range]) {
+							printf("Threshold must be in range +/- %i mV\n",psRangesMV[unit->channelSettings[inCh].range]);
+							config >> tmp;
+						}
+
+						triggerThresholdsMV[inCh] = tmp;
+						s_info->triggerSettings[inCh].triggerThreshold = triggerThresholdsMV[inCh];
+						printf("Threshold set: %f\n",s_info->triggerSettings[inCh].triggerThreshold);
+
+					}
+
+				}
+				else if (ch == 'N') trigger[inCh] = 0;
+				else {
+					printf("Closing the device...\n");
+					closeDevice();
+					printf("Bye!\n");
+					if (file->IsOpen()) file->Close();
+					exit(0);
+				}
+			}
+
+			else if (chEnable == 'N') {
+				unit->channelSettings[inCh].enabled = 0;
+				unit->channelSettings[inCh].DCcoupled = PS5000A_DC;
+				unit->channelSettings[inCh].range = 1;
+				unit->channelSettings[inCh].analogueOffset = 0.0;			}
+
+			else {
+				printf("Closing the device...\n");
+				closeDevice();
+				printf("Bye!\n");
+				if (file->IsOpen()) file->Close();
+				exit(0);
+			}
+
+		}
+	}
+	while(unit->channelSettings[0].enabled == 0 && unit->channelSettings[1].enabled == 0);
+
+	if (unit->channelSettings[0].enabled == 1) printf("Channel A enabled\n");
+	else printf("Channel A not enabled\n");
+
+	if (unit->channelSettings[1].enabled == 1) printf("Channel B enabled\n");
+	else printf("Channel B not enabled\n");
+
+	status = ps5000aSetChannel(	unit->handle,PS5000A_CHANNEL_A,unit->channelSettings[0].enabled,
+								unit->channelSettings[0].DCcoupled,psRanges[unit->channelSettings[0].range],
+								unit->channelSettings[0].analogueOffset);
+	if (status != PICO_OK) {
+		printf("PROBLEM SETTING CHANNEL %c\n",'A');
+	}
+
+	status = ps5000aSetChannel(	unit->handle,PS5000A_CHANNEL_B,unit->channelSettings[1].enabled,
+								unit->channelSettings[1].DCcoupled,psRanges[unit->channelSettings[1].range],
+								unit->channelSettings[1].analogueOffset);
+	if (status != PICO_OK) {
+		printf("PROBLEM SETTING CHANNEL %c\n",'B');
+		return PICO_INVALID_CHANNEL;
+	}
+
+	s_info->channelSettings[0] = unit->channelSettings[0];
+	s_info->channelSettings[1] = unit->channelSettings[1];
+
+	// Chiama la funzione per settare il trigger
+	// Imposta la direzione
+	status = setSimpleTrigger(trigger,triggerDirections,triggerThresholdsMV,2);
+	if (status == PICO_OK) printf("\nTriggering set correctly!\n");
+	else {
+		printf("PROBLEM SETTING TRIGGER\n");
+		return PICO_INVALID_TRIGGER_STATES;
+	}
+
+	// Definisco numero waveform da registrare (uso la modalità rapid block mode per avere deadtime ridotto, vedi programmer guide)
+	int32_t maxSamples; // Numero massimo di samples per questa timebase
+	int32_t no_segments = 1024;
+	int32_t no_waveforms = 100;
+
+	printf("Setting acquisition properties...");
+	printf("\nDEFAULT:\n");
+	printf("\nNumber of segments:	%i\n",no_segments);
+	printf("Number of waveforms:	%i\n",no_waveforms);
+	printf("\nIs it ok?\n");
+	config >> ch;
+	ch = toupper(ch);
+
+	while (ch == 'N') {
+		printf("Insert number of segments:\n");
+		config >> no_segments;
+		printf("Insert number of waveforms (must be less than %i):\n",no_segments);
+		config >> no_waveforms;
+		printf("\nNumber of segments:	%i\n",no_segments);
+		printf("Number of waveforms:	%i\n",no_waveforms);
+
+		printf("\nIs it ok?\n");
+		config >> ch;
+		ch = toupper(ch);
+	}
+
+	status = ps5000aMemorySegments(unit->handle,no_segments,&maxSamples); // Imposto il numero di segmenti di memoria
+	status = ps5000aSetNoOfCaptures(unit->handle, no_waveforms); // Imposto il numero di waveform da registrare
+
+	printf("\nMax samples per div:	%i\n",maxSamples);
+
+	// Imposta la timebase
+	uint32_t nSamplesDIV = 100; // Numero di samples in una divisione richiesti
+	uint32_t nSamplesTOT = nSamplesDIV*10; // Numero di samples totali
+
+	int32_t preTrigger = nSamplesDIV*2;
+	int32_t postTrigger = nSamplesDIV*5;
+	uint32_t timebase = 4; // Dovrebbe corrispondere a (timebase-2)/1.25e8 s per sample (se timebase=127, corrisponde a 1 microsec/sample)
+
+	printf("\nSetting sampling properties...\n");
+	printf("\nDEFAULT:\n");
+	printf("Timebase:					%i\n",timebase);
+	printf("Time per SAMPLE (ns):			%f\n",(timebase-2)*1./0.125);
+
+	printf("\nIs it ok?\n");
+	config >> ch;
+	ch = toupper(ch);
+
+	while (ch == 'N') {
+		printf("Time per DIV (ns) = (timebase-2)/0.125\n");
+		printf("Insert timebase:\n");
+		config >> timebase;
+
+		printf("Got %i\n",timebase);
+		printf("Time per SAMPLE (ns):			%f\n",(timebase-2)*1./0.125);
+
+		printf("\nIs it ok?\n");
+		config >> ch;
+		ch = toupper(ch);
+	}
+
+	printf("\nTimebase:					%i\n",timebase);
+	printf("Sampling interval (ns):			%f\n",(timebase-2)*1./0.125);
+
+	printf("\nDEFAULT:\n");
+	printf("Samples per DIV:		%u\n",nSamplesDIV);
+	printf("Number of total samples:	%i\n",nSamplesTOT);
+	printf("PreTrigger samples:		%u\n",preTrigger);
+	printf("PostTrigger samples:		%u\n",postTrigger);
+
+	printf("\nIs it ok?\n");
+	config >> ch;
+	ch = toupper(ch);
+
+	while (ch == 'N') {
+		printf("Insert samples per DIV:\n");
+		config >> nSamplesDIV;
+		nSamplesTOT = 10*nSamplesDIV;
+		printf("Insert preTrigger samples:\n");
+		config >> preTrigger;
+		printf("Insert postTrigger samples:\n");
+		config >> postTrigger;
+
+		printf("Samples per DIV:		%u\n",nSamplesDIV);
+		printf("Number of total samples:	%i\n",nSamplesTOT);
+		printf("PreTrigger samples:		%u\n",preTrigger);
+		printf("PostTrigger samples:		%u\n",postTrigger);
+
+		printf("\nIs it ok?\n");
+		config >> ch;
+		ch = toupper(ch);
+	}
+
+	int32_t samplesRequired = preTrigger+postTrigger;
+	float timeIntervalNanoseconds; // Intervallo temporale in ns tra due campionamenti
+
+	printf("\nChecking the timebase...\n");
+
+	for (int32_t inSegment = 0; inSegment < no_segments-1; inSegment++) {
+		do
+		{
+			 // Per ogni segmento di memoria controlla se il numero di samples scelto è adeguato per la timebase, in caso trova una timebase adeguata per tutti
+			status = ps5000aGetTimebase2(unit->handle, timebase, nSamplesTOT, &timeIntervalNanoseconds, &maxSamples, inSegment);
+
+			if(status == PICO_INVALID_NUMBER_CHANNELS_FOR_RESOLUTION)
+			{
+				printf("BlockDataHandler: Error - Invalid number of channels for resolution.\n");
+				closeDevice();
+				if (file->IsOpen()) file->Close();
+				exit(0);
+			}
+			else if(status == PICO_OK)
+			{
+				// Do nothing
+			}
+			else
+			{
+				printf("Increasing the timebase...\n");
+				timebase++;
+			}
+
+		}
+		while(status != PICO_OK);
+	}
+
+	printf("\nTIMEBASE USED\n");
+	printf("Timebase:			%i\n",timebase);
+	printf("Sampling interval (ns):	%f\n",(timebase-2)*1./0.125);
+	printf("Total samples:		%i\n",nSamplesTOT);
+	printf("Max samples:		%i\n",maxSamples);
+	printf("Time interval (ns):	%f\n",timeIntervalNanoseconds);
+	printf("Samples stored per waveform (pre+post):	%i\n",samplesRequired);
+
+	s_info->no_segments = no_segments;
+	s_info->no_waveforms = no_waveforms;
+	s_info->nSamplesDIV = nSamplesDIV;
+	s_info->preTrig = preTrigger;
+	s_info->samplesStored = samplesRequired;
+	s_info->timebase = timebase;
+	s_info->timeIntervalNanoseconds = timeIntervalNanoseconds;
+
+	uint64_t durata = 0;
+	cout << "\nInsert acquisition time (s): ";
+	while (durata <= 0.0) {
+		config >> durata;
+	}
+
+	uint64_t nMaxSignals = 0;
+
+	printf("Insert number of waveforms to acquire: ");
+	while (nMaxSignals <= 0) {
+		config >> nMaxSignals;
+	}
+
+	s_info->durata_s = durata;
+	s_info->nMaxSignals = nMaxSignals;
+
+	cout << endl << "Configuration completed\n";
+	cout << "Press enter to continue\n";
+
+	return PICO_OK;
+}
+
 
 /****************************************************************************
 * setTrigger for channels A and B
@@ -950,8 +1309,8 @@ void DeviceManager::Run() {
 //							instant.timeUnit = (int64_t)timeUnits[capture+channel*nCaptures]; // Time unit of trigger instant
 						}
 					}
-					index++;
 					treeEvt->Fill();
+					index++;
 				}
 			}
 

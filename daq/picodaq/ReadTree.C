@@ -29,7 +29,7 @@ float adc_to_mv(int16_t raw, int16_t rangeIndex, int16_t maxADCValue)
 	return (raw * inputRanges[rangeIndex])*1. / maxADCValue;
 }
 
-void ReadTree(const char *fileName, int i, bool negative=false, bool hack=true) {
+void ReadTree(const char *fileName, int i, bool negative=false) {
 
 	// dichiaro le struct
 	InfoAcq::chSettings chSet1;

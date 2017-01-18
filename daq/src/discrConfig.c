@@ -90,11 +90,19 @@ int main(int argc, char *argv[])
 			     negative,   
 			     negative,    
 			     negative};
-  uint32_t channel_mask = 0x000f; //mask of enabled channels.  This mask also determines the channels used in the coincidence
-  // uint32_t channel_mask = 0x0010; //mask of enabled channels.  This mask also determines the channels used in the coincidence
-  uint32_t veto_mask = 0x0008;  //mask of veto channels
-  // uint32_t veto_mask = 0x0000;  //mask of veto channels
+  //mask of enabled channels.  This mask also determines the channels used in the coincidence
+  // for lifetime 
+  // uint32_t channel_mask = 0x000f;
+  // uint32_t veto_mask = 0x0008;  //mask of veto channels
 
+  /* for efficiecy studies */
+  uint32_t channel_mask = 0x0007;
+  uint32_t veto_mask = 0x0000;  //mask of veto channels
+
+  /* for time calibration studies
+  // uint32_t channel_mask = 0x0010; //mask of enabled channels.  This mask also determines the channels used in the coincidence
+  // uint32_t veto_mask = 0x0000;  //mask of veto channels
+  */
 
   //keep a minimum of about 58,75ns (5 DAC) delay to give time to the electronics to shape the signals
   //  range [45ns:750ns] in 2.75ns steps
