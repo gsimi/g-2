@@ -1,1 +1,1 @@
-while (true); do sleep 300; /home/lhcb/bin/getAriettaData ; done;
+while (true); do ./getAriettaData ; sleep 300;  done;
