@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
   // uint32_t veto_mask = 0x0008;  //mask of veto channels
 
   /* for efficiecy studies */
-  uint32_t channel_mask = 0x0007;
+  uint32_t channel_mask = 0x000e;
   uint32_t veto_mask = 0x0000;  //mask of veto channels
 
   /* for time calibration studies
