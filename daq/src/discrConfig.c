@@ -78,9 +78,10 @@ int main(int argc, char *argv[])
 
   #define nch  6
   int channel[nch]  =  {1,2,3,4,5,6};  //channel=[1:16]
-  float jthreshold[nch]  =  {-50,
+  float jthreshold[nch]  =  {
+  				 -50,
 			     -50,
-                             -50,
+                 -50,
 			     -50, 
 			     -50, 
 			     -50}; //[mV]
@@ -92,15 +93,15 @@ int main(int argc, char *argv[])
 			     negative};
   //mask of enabled channels.  This mask also determines the channels used in the coincidence
   // for lifetime 
-  // uint32_t channel_mask = 0x000f;
-  // uint32_t veto_mask = 0x0008;  //mask of veto channels
+  //  uint32_t enabled_channel = 0x000f;
+  //  uint32_t veto_mask = 0x0008;  //mask of veto channels
 
   /* for efficiecy studies */
-  uint32_t channel_mask = 0x000e;
+  uint32_t enabled_channels = 0xf;
   uint32_t veto_mask = 0x0000;  //mask of veto channels
 
   /* for time calibration studies
-  // uint32_t channel_mask = 0x0010; //mask of enabled channels.  This mask also determines the channels used in the coincidence
+  // uint32_t enabled_channels = 0x0010; //mask of enabled channels.  This mask also determines the channels used in the coincidence
   // uint32_t veto_mask = 0x0000;  //mask of veto channels
   */
 
@@ -161,6 +162,10 @@ int main(int argc, char *argv[])
 
 int ich;
   for (ich=0;ich<nch;ich++){
+    /* 
+       THRESHOLD CONFGURATION 
+    */
+
     printf ("configuring channel %d\n",channel[ich]);
     uint16_t channel_mem_offset=4*(channel[ich]-1);
     //set the threshold address
@@ -250,7 +255,7 @@ int ich;
   int itrig;
   for (itrig=1; itrig<=2; itrig++){
     jdiscregister=0x5000+trigger_offset[itrig]; 
-    uint32_t mask_channel=0xffff & ~(channel_mask);
+    uint32_t mask_channel=0xffff & ~(enabled_channels);
     uint32_t trigger_enable_mask=mask_channel;
     jdiscdata = trigger_enable_mask;
     //write

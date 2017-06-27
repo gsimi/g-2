@@ -114,7 +114,7 @@ void DeviceManager::openDevice() {
 	do {
 
 		printf("Opening...\n");
-		status = ps5000aOpenUnit(&unit->handle, NULL, PS5000A_DR_8BIT);
+		status = ps5000aOpenUnit(&unit->handle, NULL, PS5000A_DR_12BIT);
 		unit->openStatus = (int16_t) status;
 		unit->complete = 1;
 
@@ -463,6 +463,7 @@ PICO_STATUS DeviceManager::setChannels()
 
 	s_info->channelSettings[0] = unit->channelSettings[0];
 	s_info->channelSettings[1] = unit->channelSettings[1];
+
 
 	// Chiama la funzione per settare il trigger
 	// Imposta la direzione
@@ -1294,6 +1295,7 @@ void DeviceManager::Run() {
 
 					for (channel = 0; channel < unit->channelCount; channel++)
 					{
+						
 						if(unit->channelSettings[channel].enabled)
 						{
 
