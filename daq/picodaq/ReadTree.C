@@ -34,7 +34,7 @@ float adc_to_mv(int16_t raw, int16_t rangeIndex, int16_t maxADCValue)
 	return (raw * inputRanges[rangeIndex])*1. / maxADCValue;
 }
 
-void ReadTree(const char *fileName, int i, bool negative=false) {
+void ReadTree(const char *fileName, int i, bool negative=false, bool draw = true) {
 
 	// dichiaro le struct
 	InfoAcq::chSettings chSet1;
@@ -131,7 +131,7 @@ void ReadTree(const char *fileName, int i, bool negative=false) {
 	TH1F* spectrumIntegralMissed = new TH1F( "hIntMiss", "Integral Spectrum of missed events", 200, -5e4, 5e4 );
 	float xmin= negative? adc_to_mv(sampSet.max_adc_value,chSet1.range,-1*sampSet.max_adc_value) : 0 ; 
 	float xmax = negative? 0 : adc_to_mv(sampSet.max_adc_value,chSet1.range,sampSet.max_adc_value) ;
-	TH1F* spectrumMaximum = new TH1F( "hMax", "Maximum Spectrum", 90, xmin,xmax );
+	TH1F* spectrumMaximum = new TH1F( "hMax", "Maximum Spectrum", 1024, xmin,xmax );
 	TH1F* spectrumMaximumMissed = new TH1F( "hMaxMiss", "Maximum Spectrum of missed events", 180,
 						-adc_to_mv(sampSet.max_adc_value,chSet1.range,sampSet.max_adc_value),
 						adc_to_mv(sampSet.max_adc_value,chSet1.range,sampSet.max_adc_value) );
@@ -166,13 +166,14 @@ void ReadTree(const char *fileName, int i, bool negative=false) {
 	// dichiaro l'oggetto Event e lo riempio
 	Event* evt = new Event(sampSet.samplesStoredPerEvent);
 	cout << "Riempio l'oggetto EVENT\n";
+	cerr << "DEBUG!!!!!: " << daVedere << " E QUESTO: " << waveformInBlock << endl;
 
 	treeRTI->GetEntry(0);
 	treeRTI->GetEntry(daVedere/waveformInBlock);
 	evt->FillRTI(waveformInBlock,elapsedTime,waveformStored);
 	evt->PrintRTI();
 
-	treeEvt->GetEntry(daVedere);
+	treeEvt->GetEntry(i);
 	evt->FillEvent(ID,triggerInstant,timeUnit,sample);
 
 	TH1F* signal = new TH1F( "Event Plot", "Event Plot",sampSet. samplesStoredPerEvent, -sampSet.preTrig*sampSet.timeIntervalNanoseconds, (sampSet.samplesStoredPerEvent-sampSet.preTrig)*sampSet.timeIntervalNanoseconds );
@@ -180,32 +181,35 @@ void ReadTree(const char *fileName, int i, bool negative=false) {
 	for (int jj=0; jj<sampSet.samplesStoredPerEvent; jj++) signal->SetBinContent(jj,adc_to_mv(sample[jj],chSet1.range,sampSet.max_adc_value));
 
 	// Grafici
-	TCanvas * c0 = new TCanvas("c0");
-	c0->Divide(2,2);
+	if(draw)
+	{
+		TCanvas * c0 = new TCanvas("c0");
+		c0->Divide(2,2);
 	
-	c0->cd(1);
-	timeDistr->SetLineColor(2);
-/*	timeDistr->SetLineWidth(1);
-	timeDistr->SetMarkerColor(4);
-	timeDistr->SetMarkerStyle(2);
-*/	timeDistr->GetXaxis()->SetTitle("Instant (ms)");
-	timeDistr->GetYaxis()->SetTitle("Waveforms stored");
-	timeDistr->Draw("apL");
+		c0->cd(1);
+		timeDistr->SetLineColor(2);
+	/*	timeDistr->SetLineWidth(1);
+		timeDistr->SetMarkerColor(4);
+		timeDistr->SetMarkerStyle(2);
+	*/	timeDistr->GetXaxis()->SetTitle("Instant (ms)");
+		timeDistr->GetYaxis()->SetTitle("Waveforms stored");
+		timeDistr->Draw("apL");
 
-	c0->cd(2);
-	spectrumIntegral->SetXTitle("Integral");
-	spectrumIntegral->SetYTitle("Frequency");
-	spectrumIntegral->Draw();
+		c0->cd(2);
+		spectrumIntegral->SetXTitle("Integral");
+		spectrumIntegral->SetYTitle("Frequency");
+		spectrumIntegral->Draw();
 
-	c0->cd(3);
-	signal->SetXTitle("Instant (ns)");
-	signal->SetYTitle("Amplitude (mV)");
-	signal->Draw();
+		c0->cd(3);
+		signal->SetXTitle("Instant (ns)");
+		signal->SetYTitle("Amplitude (mV)");
+		signal->Draw();
 
-	c0->cd(4);
-	spectrumMaximum->SetXTitle("Maximum (mV)");
-	spectrumMaximum->SetYTitle("Frequency");
-	spectrumMaximum->Draw();
+		c0->cd(4);
+		spectrumMaximum->SetXTitle("Maximum (mV)");
+		spectrumMaximum->SetYTitle("Frequency");
+		spectrumMaximum->Draw();
+	}
 	printf("# signals =%f, efficiency %f \%\n",
 	       spectrumMaximumSig->GetEntries(),
 	       spectrumMaximumSig->GetEntries()/waveformStored*100);
@@ -217,8 +221,7 @@ void ReadTree(const char *fileName, int i, bool negative=false) {
 
 
 
-void
-viewEvent(TFile* input_file, int i){
+void viewEvent(TFile* input_file, int i){
 
 	// dichiaro le struct
 	InfoAcq::chSettings chSet1;
