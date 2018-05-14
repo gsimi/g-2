@@ -26,8 +26,11 @@
 #include "TH1F.h"
 #include "TCanvas.h"
 
-#include "/home/lhcb/g-2/daq/picodaq/InfoAcq.cc"
-#include "/home/lhcb/g-2/daq/picodaq/Event.cc"
+//#include "/home/lhcb/g-2/daq/picodaq/InfoAcq.cc"
+//#include "/home/lhcb/g-2/daq/picodaq/Event.cc"
+#include "InfoAcq.cc"
+#include "Event.cc"
+
 
 float adc_to_mv(int16_t raw, int16_t rangeIndex, int16_t maxADCValue)
 {
