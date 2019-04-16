@@ -136,14 +136,14 @@ long ReadTree(const char *fileName, bool negative)
 		spectrumMaximum->Fill(negative?minimum:maximum);
 		if ((negative?minimum:maximum) >= 0)
 		{
-			clog << "qualcosa!!!\n";
+			cerr << "Error: positive signal\n";
 			TH1F signal( "Event Plot", "Event Plot",sampSet. samplesStoredPerEvent, -sampSet.preTrig*sampSet.timeIntervalNanoseconds, (sampSet.samplesStoredPerEvent-sampSet.preTrig)*sampSet.timeIntervalNanoseconds );
 	
 			for (int jj=0; jj<sampSet.samplesStoredPerEvent; jj++) signal.SetBinContent(jj,adc_to_mv(sample[jj],chSet1.range,sampSet.max_adc_value));
-			TCanvas c;
+			/*TCanvas c;
 			signal.Draw();
 			string filename = "fail/failSignal" + to_string(failCount)+".png";
-			c.SaveAs(filename.c_str());
+			c.SaveAs(filename.c_str());*/
 			failCount ++;
 	
 		}

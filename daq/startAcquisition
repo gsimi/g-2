@@ -1,1 +1,18 @@
-while (true); do ./getAriettaData ; sleep 300;  done;
+ssh root@10.42.0.10  cat  /sys/devices/soc0/tc_measuretime@0/measure > /dev/null
+
+basedir=$(dirname $0)
+j=1;
+while (true); do 
+      $basedir/getAriettaData $1; 
+      rm /home/lhcb/.xsession-errors ;
+      touch /home/lhcb/.xsession-errors ;
+      sleep 10;
+       echo ok
+ 
+done;
+#for j in $(seq 13)
+#do
+#	$basedir/getAriettaData $1
+#	echo $j
+#	usleep 100000
+#done

@@ -77,7 +77,8 @@ int main(int argc, char *argv[])
   */
 
   #define nch  6
-  int channel[nch]  =  {1,2,3,4,5,6};  //channel=[1:16]
+  int channel[nch]  =  {10,11,12,13,15,16};  //channel=[1:16]
+  //  int channel[nch]  =  {1,2,3,4,5,6};  //channel=[1:16]
   float jthreshold[nch]  =  {
   				 -50,
 			     -50,
@@ -91,13 +92,15 @@ int main(int argc, char *argv[])
 			     negative,   
 			     negative,    
 			     negative};
-  //mask of enabled channels.  This mask also determines the channels used in the coincidence
+  // mask of enabled channels.  This mask also determines the channels used in the coincidence
   // for lifetime 
-  //  uint32_t enabled_channel = 0x000f;
-  //  uint32_t veto_mask = 0x0008;  //mask of veto channels
+  // uint32_t enabled_channel = 0x000f;
+  // uint32_t veto_mask = 0x0008;  //mask of veto channels
 
   /* for efficiecy studies */
-  uint32_t enabled_channels = 0xf;
+  // *** (vedi note p.45 discriminatore_v4) i primi 4 hexad (16bit) sono ininfluenti 
+  // *** e.g. 0x0600 attiva i canali 10 e 11
+  uint32_t enabled_channels = 0xf; // *** equivalente a 0x000f
   uint32_t veto_mask = 0x0000;  //mask of veto channels
 
   /* for time calibration studies
@@ -110,19 +113,20 @@ int main(int argc, char *argv[])
   float tdelay[nch]      =  {45.0 + 20*2.75,
 			     45.0 + 20*2.75,
 			     45.0 + 20*2.75, 
-			     45.0 + 10*2.75,  //veto 27.5 ns early
-			     45.0 + 10*2.75,
+			     45.0 + 50*2.75, 
+			     45.0 + 10*2.75, //veto 27.5 ns early
 			     45.0 + 10*2.75};//[ns] 
 
   //  range [10ns:1173ns] in 4.56ns steps
-  float adcwidth=33; //  160ns
+//  float adcwidth=33; //  160ns
+  float adcwidth=53; //  78.5ns
   float vetowidth=45; //215ns
   float width[nch]       =  {10.1 + adcwidth*4.56,
 			     10.1 + adcwidth*4.56,
 			     10.1 + adcwidth*4.56,
-			     10.1 + vetowidth*4.56,
 			     10.1 + adcwidth*4.56,
-			     10.1 + adcwidth*4.56}; // [ns] 
+			     10.1 + vetowidth*4.56,
+			     10.1 + vetowidth*4.56}; // [ns] 
   
   int32_t       JHandle;
   CVErrorCodes  cvret;
@@ -254,9 +258,10 @@ int ich;
   int trigger_offset[3]={0x4,0x8,0xc};// 0x4=TR1, 0x8=TR2, 0xc=TR3
   int itrig;
   for (itrig=1; itrig<=2; itrig++){
+  // *** registri minterm per i vari trigger (5004,5008,500c)
     jdiscregister=0x5000+trigger_offset[itrig]; 
-    uint32_t mask_channel=0xffff & ~(enabled_channels);
-    uint32_t trigger_enable_mask=mask_channel;
+    uint32_t mask_channel=0xffff & ~(enabled_channels);	// *** esegue l'AND bit a bit
+    uint32_t trigger_enable_mask = mask_channel;
     jdiscdata = trigger_enable_mask;
     //write
     printf("writing in register 0x%x\n",jdiscregister);
@@ -283,18 +288,20 @@ int ich;
 
   uint32_t veto_channel=veto_mask;
   jdiscdata = veto_channel;
-  //write
+
+  // write
   printf("writing in register 0x%x\n",jdiscregister);
   printf("setting the channel veto mask to 0x%x \n",jdiscdata);
   vmeaddr = jdiscbaseaddr + jdiscregister;
   cvret = CAENVME_WriteCycle(JHandle,vmeaddr,&jdiscdata,am,dtsize);
-  //check
+
+  // check
   caenvmecheck(cvret);
   cvret = CAENVME_ReadCycle(JHandle,vmeaddr,&jdiscdata,am,dtsize);
   printf( "check jdiscdata: read in 0x%x value 0x%x\n",vmeaddr,jdiscdata);
   caenvmereadcheck(cvret,vmeaddr,jdiscdata); 
-
-  //close the device
+  
+  // close the device
   CAENVME_End(JHandle);
 
 

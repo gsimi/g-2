@@ -38,6 +38,7 @@ void plot ( string fileName, bool clock_counts=false ){
             xV.push_back(x);
             }
     }
+    cout << rawV.size() << endl;
     
     dtraw = new TH1F("dtraw","Segnali mu+",1000,0,1000);
     for (unsigned int i=0; i<rawV.size(); i++) {
@@ -70,10 +71,13 @@ void plot ( string fileName, bool clock_counts=false ){
     sprintf(sfitmuplus,"[0]*%f/(%f-%f)+[1]*%f/[2]*exp(-x/[2])/(exp(-%f/[2])-exp(-%f/[2]))",bw,tmax,tmin,bw,tmin,tmax);
     TF1* ffitmuplus=new TF1("fdtmuplus",sfitmuplus,tmin,tmax);
     ffitmuplus->SetParNames("Nbkg","NSig","tau");
-    ffitmuplus->SetParameters(10,100,2);
+    ffitmuplus->SetParameters(rawV.size()*0.1/2, rawV.size()*0.9/2, 2);
     dtmuplus->Fit(ffitmuplus,"l","",tmin,tmax);
     
-    tmin=time_calib_q;
+    //    tmin=time_calib_q;
+    //t<0.5 us the system is inefficient, 
+    //=> is not sensitive to the mu- lifetime
+    tmin=0.5; 
     nbins=1000;
     bw=(tmax-tmin)/nbins;
 
@@ -83,15 +87,25 @@ void plot ( string fileName, bool clock_counts=false ){
     }
     dtmu->Draw("e");
     
+    //fit with two lifetimes and two yelds (one each for mu+ and  mu-)
     char sfitmu[512];
     sprintf(sfitmu,"[0]*%f/(%f-%f)+[1]*%f/[2]*exp(-x/[2])/(exp(-%f/[2])-exp(-%f/[2])) + [3]*%f/[4]*exp(-x/[4])/(exp(-%f/[4])-exp(-%f/[4]))",bw,tmax,tmin,bw,tmin,tmax,bw,tmin,tmax);
     TF1* ffitmu=new TF1("fdt",sfitmu,tmin,tmax);
     ffitmu->SetParNames("Nbkg","NSig_p","tau_p","NSig_m","tau_m");
-    ffitmu->SetParameters(10,100,2,100,0.1);
+    ffitmu->SetParameters(rawV.size()*0.1, rawV.size()*0.9/2,2.,rawV.size()*0.9/2,0.1);
 
     dtmu->GetXaxis()->SetTitle("t (microsecondi)");
     dtmu->GetYaxis()->SetTitle("conteggi");
     dtmu->Fit(ffitmu,"l","",tmin,tmax);
+
+    //fit with two lifetimes and equal mu+ and mu- yield Nsig_p = Nsig_m
+    char sfitmu_2[512];
+    sprintf(sfitmu_2,"[0]*%f/(%f-%f)+[1]*%f/[2]*exp(-x/[2])/(exp(-%f/[2])-exp(-%f/[2])) + [1]*%f/[3]*exp(-x/[3])/(exp(-%f/[3])-exp(-%f/[3]))",bw,tmax,tmin,bw,tmin,tmax,bw,tmin,tmax);
+    TF1* ffitmu_2=new TF1("fdt_2",sfitmu_2,tmin,tmax);
+    ffitmu_2->SetParNames("Nbkg","NSig_p","tau_p","tau_m");
+    ffitmu_2->SetParameters(rawV.size()*0.1, rawV.size()*0.9/2,2.2,0.1);
+    dtmu->Fit(ffitmu_2,"l","",tmin,tmax);
+
 
     dtmuplus->Draw("e");
     

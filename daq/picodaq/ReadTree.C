@@ -129,7 +129,7 @@ void ReadTree(const char *fileName, int i, bool negative=false, bool draw = true
 	// spettro in energia
 	TH1F* spectrumIntegral = new TH1F( "hInt", "Integral Spectrum", 200, negative? -5e4:-1e3, negative? 1e3:5e4 );
 	TH1F* spectrumIntegralMissed = new TH1F( "hIntMiss", "Integral Spectrum of missed events", 200, -5e4, 5e4 );
-	float xmin= negative? adc_to_mv(sampSet.max_adc_value,chSet1.range,-1*sampSet.max_adc_value) : 0 ; 
+	float xmin = negative? adc_to_mv(sampSet.max_adc_value,chSet1.range,-1*sampSet.max_adc_value) : 0 ; 
 	float xmax = negative? 0 : adc_to_mv(sampSet.max_adc_value,chSet1.range,sampSet.max_adc_value) ;
 	TH1F* spectrumMaximum = new TH1F( "hMax", "Maximum Spectrum", 1024, xmin,xmax );
 	TH1F* spectrumMaximumMissed = new TH1F( "hMaxMiss", "Maximum Spectrum of missed events", 180,
