@@ -29,6 +29,7 @@
 #include "InfoAcq.cc"
 #include "Event.cc"
 
+
 float adc_to_mv(int16_t raw, int16_t rangeIndex, int16_t maxADCValue)
 {
 	uint16_t inputRanges [12] = {
