@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
 	/*GESTIONE DELL'OSCILLOSCOPIO*/
 //	cout << "Connect the device and press any key\n";
 //	getchar();
-	char* config_file=(char*)"config.txt";
+	char* config_file=(char*)"gainconfigch1.txt";
 	if (argc>1) config_file=argv[1];
 	DeviceManager* manager = new DeviceManager(config_file); // nel costruttore sono incluse le funzioni per aprire il device e inizializzare i canali
 
