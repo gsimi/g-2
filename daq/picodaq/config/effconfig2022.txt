@@ -1,0 +1,33 @@
+#canale A (digitale)
+y
+ d
+ 9
+ n
+ y
+ r
+ 800
+
+#canale B (analogico)
+y
+ d
+ 6 # range 4=100mV, 6=500mV
+ n
+ n
+ #f
+ #-5 
+
+# SETTING ACQUISITION PROPERTIES FOR RAPID BLOCK MODE
+y
+n
+  3 # Time per sample(ns)=(timebase-2)*8 3->8ns 4->16ns, 5->24ns, 6,  
+  y
+#  y
+  n
+    100
+    50
+    80
+    y
+
+# SETTING DURATION OF ACQUISITION
+180 # acq time in sec
+20000 # num forme d'onda

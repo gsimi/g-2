@@ -1,0 +1,998 @@
+    1  cd analysis/
+    2  git status
+    3  ll waveforms.C 
+    4  git status
+    5  scp lxlhcb2:~/home/lhcb/afterpulses/pmt-test-facility/analysis/*.C .
+    6  scp lxlhcb2:~/home/lhcb/afterpulses/pmt-test-facility/analysis/waveforms.C .
+    7  scp lxlhcb2:/home/lhcb/afterpulses/pmt-test-facility/analysis/*.C .
+    8  scp lxlhcb2:/home/lhcb/afterpulses/pmt-test-facility/analysis/*.cc .
+    9  scp lxlhcb2:/home/lhcb/afterpulses/pmt-test-facility/analysis/*.h .
+   10  git status
+   11  scp lxlhcb2:/home/lhcb/afterpulses/pmt-test-facility/analysis/macros .
+   12  scp -r lxlhcb2:/home/lhcb/afterpulses/pmt-test-facility/analysis/macros .
+   13  rm macros/*.C~
+   14  ll macros/
+   15  git status
+   16  git log
+   17  ll
+   18  git status
+   19  git add pmtwavef.cc pmtwavef.h waveforms.C macros/ ../daq/rename.sh 
+   20  git status
+   21  vim .gitignore~ 
+   22  vim .gitignore
+   23  vim ../.gitignore
+   24  cp ../.gitignore .
+   25  vim .gitignore
+   26  git status
+   27  git add .gitignore
+   28  git rm macros/*root
+   29  jobs
+   30  git status
+   31  git rm macros/time-fit.root
+   32  ll
+   33  git status
+   34  vim waveforms.C 
+   35  git commit -m "Added macros folder. Updated version of waveforms.C able to fit events with multiple peaks"
+   36  git push
+   37  git status
+   38  pwd
+   39  vim ~/rich-pd/.git/description 
+   40  vim ~/rich-pd/.git/HEAD 
+   41  git info
+   42  git status
+   43  git branch -a
+   44  cd -
+   45  git status
+   46  git push himens
+   47  git push -u himens
+   48  vim ../.git/config
+   49  ll
+   50  pwd
+   51  cd ..
+   52  ll
+   53  git config user.name "himens"
+   54  git config user.name 
+   55  git push
+   56  jobs
+   57  ll
+   58  git status
+   59  ll
+   60  git log
+   61  git push
+   62  ll
+   63  exit
+   64  cd rich-pd/pmt-test-facility/analysis/
+   65  scp -r lxlhcb2:/home/lhcb/afterpulses/pmt-test-facility/analysis/waveforms.C .
+   66  git status
+   67  scp -r lxlhcb2:/home/lhcb/afterpulses/pmt-test-facility/analysis/macros/prova.C .
+   68  git status
+   69  mv prova.C macros/
+   70  git status
+   71  git add macros/prova.C 
+   72  git commit -m "mod prova.C"
+   73  git push
+   74  git log
+   75  exit
+   76  l
+   77  cd ..
+   78  ls
+   79  cd data/afterglow-data/
+   80  ls
+   81  ls -ltrh
+   82  nohup CAENGECO2020 >& /dev/null
+   83  bg
+   84  bgtop
+   85  top
+   86  htop 
+   87  iotop 
+   88  sudo iotop
+   89  top
+   90  sudo iotop
+   91  1M_1Gs_FB5235_tune5_1000V_px4_readpx4_delay0.dat
+   92  l
+   93  less pmtdaqConfig.txt
+   94  emacs pmtdaqConfig.txt
+   95  l
+   96  ./pmtdaq  pmtdaqConfig.txt
+   97  grep -i transfer *
+   98  ./pmtdaq  pmtdaqConfig.txt
+   99  ./pmtdaq  pmtdaqConfig.txt
+  100  l
+  101  ./pmtdaq  pmtdaqConfig.txt
+  102  l
+  103  ./pmtdaq  pmtdaqConfig.txt
+  104  1M_1Gs_FB5235_tune5_1000V_px4_readpx4_delay0.dat
+  105  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px4_readpx12_delay0
+  106  cd ..
+  107  cd data/
+  108  ls -ltrh
+  109  cd afterglow-data/
+  110  ls -ltrh
+  111  cd ..
+  112  ls
+  113  cd ..
+  114  ls
+  115  cd daq
+  116  ls
+  117  jobs
+  118  SSH -xy lxlhcb3
+  119  ssh -XY lxlhcb3
+  120  l
+  121  cd rich-pd/
+  122  l
+  123  cd pmt-test-facility
+  124  l
+  125  cd analysis/
+  126  l
+  127  cd ..
+  128  exit
+  129  ll rich-pd/pmt-test-facility/data/afterglow-data/
+  130  exit
+  131  cd rich-pd/pmt-test-facility
+  132  cd analysis/
+  133  ll
+  134  ll mypdfs/
+  135  ll macros/
+  136  ll
+  137  ll ../data/afterglow-data/
+  138  exit
+  139  evince ~/Desktop/px04_1kV.pdf &
+  140  exit
+  141  evince ~/Desktop/px04_1kV.pdf &
+  142  evince ~/Desktop/px28.pdf 
+  143  exit
+  144  ssh -Y lxlhxb3
+  145  ssh -Y lxlhcb3
+  146  exit
+  147  ssh -Y lxlhcb3
+  148  logout
+  149  exit
+  150  cd rich-pd/pmt-test-facility/daq
+  151  ll
+  152  CAENGECO2020 &
+  153  ll
+  154  ./pmtdaq pmtdaqConfig.txt
+  155  emacs pmtdaqConfig.txt &
+  156  ./pmtdaq pmtdaqConfig.txt
+  157  ll
+  158  ./rename.sh 250k_1Gs_FB5235_px04_tune5_ext_1kHz_1kV
+  159  ll afterglow-data/
+  160  ./pmtdaq pmtdaqConfig.txt
+  161  cd afterglow-data/
+  162  ll
+  163  mv trg_250k_1Gs_FB5235_px04_tune5_ext_1kHz_1kV.dat trg_250k_1Gs_FB5235_px04_tune5_ext_1kHz_1000V.dat
+  164  mv sig_250k_1Gs_FB5235_px04_tune5_ext_1kHz_1kV.dat sig_250k_1Gs_FB5235_px04_tune5_ext_1kHz_1000V.dat
+  165  ll
+  166  cd -
+  167  ll
+  168  ./rename.sh 250k_1Gs_FB5235_px04_tune5_ext_1kHz_950V
+  169  ll afterglow-data/
+  170  ll
+  171  ./pmtdaq pmtdaqConfig.txt
+  172  ll
+  173  ./rename.sh 250k_1Gs_FB5235_px04_tune5_ext_1kHz_900V
+  174  ll afterglow-data/
+  175  ./pmtdaq pmtdaqConfig.txt
+  176  ll
+  177  ./rename.sh 250k_1Gs_FB5235_px04_tune5_ext_1kHz_850V
+  178  ll afterglow-data/
+  179  ./pmtdaq pmtdaqConfig.txt
+  180  ll
+  181  ./rename.sh 250k_1Gs_FB5235_px04_tune12_ext_2MHz_1000V
+  182  ./pmtdaq pmtdaqConfig.txt
+  183  ./rename.sh 250k_1Gs_FB5235_px04_tune12_ext_2MHz_950V
+  184  ll afterglow-data/
+  185  ./pmtdaq pmtdaqConfig.txt
+  186  ./rename.sh 250k_1Gs_FB5235_px04_tune12_ext_2MHz_900V
+  187  ll afterglow-data/
+  188  ./pmtdaq pmtdaqConfig.txt
+  189  ll 
+  190  ll afterglow-data/
+  191  ./rename.sh 250k_1Gs_FB5235_px04_tune12_ext_2MHz_850V
+  192  lla 
+  193  ll afterglow-data/
+  194  ./pmtdaq pmtdaqConfig.txt
+  195  ll 
+  196  ./rename.sh 250k_1Gs_FB5235_px04_tune12_ext_3MHz_1000V
+  197  ./pmtdaq pmtdaqConfig.txt
+  198  ./rename.sh 250k_1Gs_FB5235_px04_tune12_ext_3MHz_950V
+  199  ./pmtdaq pmtdaqConfig.txt
+  200  ./rename.sh 250k_1Gs_FB5235_px04_tune12_ext_3MHz_900V
+  201  ll
+  202  ./pmtdaq pmtdaqConfig.txt
+  203  ./pmtdaq pmtdaqConfig.txt
+  204  CAENGECO2020 &
+  205  ll
+  206  du -h afterglow-data/*ext*
+  207  ./sync-to-hd.sh 
+  208  ll
+  209  ./pmtdaq pmtdaqConfig.txt
+  210  ./pmtdaq pmtdaqConfig.
+  211  ./pmtdaq pmtdaqConfig.txt
+  212  ls
+  213  scp lhcb@lxplus.cern.ch:
+  214  scp pmtdaq.c lhcb@lxlhcb3:/data/afterglow-data
+  215  ./pmtdaq pmtdaqConfig.txt
+  216  JOBS
+  217  jobs
+  218  ./pmtdaq pmtdaqConfig.txt
+  219  fg
+  220  jobs
+  221  fg
+  222  q
+  223  jobs
+  224  ./pmtdaq pmtdaqConfig.txt
+  225  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px4_readpx4_delay0
+  226  cd ..
+  227  ls
+  228  cd data
+  229  ls
+  230  cd afterglow-data/
+  231  ls
+  232  ls -ltrh
+  233  cd ..
+  234  ls
+  235  cd ..
+  236  ls
+  237  cd ..
+  238  ls
+  239  cd pmt-test-facility
+  240  ls
+  241  cd daq/
+  242  ls
+  243  cd afterglow-data/
+  244  ls
+  245  ./pmtdaq pmtdaqConfig.txt
+  246  cd ..
+  247  ls
+  248  ./pmtdaq pmtdaqConfig.txt
+  249  jobs
+  250  ./pmtdaq pmtdaqConfig.txt
+  251  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px4_readpx4_delay900
+  252  ./pmtdaq pmtdaqConfig.txt
+  253  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px4_readpx4_delay1800
+  254  ./pmtdaq pmtdaqConfig.txt
+  255  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px4_readpx4_delay2700
+  256  ./pmtdaq pmtdaqConfig.txt
+  257  PWD
+  258  top
+  259  ps
+  260  kill -9 13504
+  261  ./pmtdaq pmtdaqConfig.txt
+  262  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px4_readpx12_delay0
+  263  cd ..
+  264  ls
+  265  cd data
+  266  ls
+  267  cd afterglow-data/
+  268  ls
+  269  ls -ltrh
+  270  cd ..
+  271  ls
+  272  cd ..
+  273  ls
+  274  cd da
+  275  cd daq
+  276  ./pmtdaq pmtdaqConfig.txt
+  277  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px4_readpx12_delay900
+  278  ./pmtdaq pmtdaqConfig.txt
+  279  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px4_readpx12_delay1800
+  280  ./pmtdaq pmtdaqConfig.txt
+  281  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px4_readpx12_delay1800
+  282  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px4_readpx12_delay2700
+  283  cd ..
+  284  ls
+  285  cd pmt-test-facility
+  286  ls
+  287  cd daq
+  288  ls
+  289  cd afterglow-data/
+  290  ls -ltrh
+  291  mv trg_500k_1Gs_FB5235_tune5_1000V_px4_readpx12_delay1800.dat trg_500k_1Gs_FB5235_tune5_1000V_px4_readpx12_delay2700.dat
+  292  mv sig_500k_1Gs_FB5235_tune5_1000V_px4_readpx12_delay1800.dat sig_500k_1Gs_FB5235_tune5_1000V_px4_readpx12_delay2700.dat
+  293  cd ..
+  294  ls
+  295  cd data/
+  296  ls
+  297  ls
+  298  cd ..
+  299  cd daq
+  300  ls
+  301  cd ..
+  302  ls
+  303  cd daq
+  304  ls
+  305  ./pmtdaq pmtdaqConfig.txt
+  306  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px4_readpx12_delay1800
+  307  ./pmtdaq pmtdaqConfig.txt
+  308  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px12_readpx12_delay0
+  309  ./pmtdaq pmtdaqConfig.txt
+  310  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px12_readpx12_delay900
+  311  ./pmtdaq pmtdaqConfig.txt
+  312  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px12_readpx12_delay1800
+  313  ./pmtdaq pmtdaqConfig.txt
+  314  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px12_readpx12_delay2700
+  315  top
+  316  ./pmtdaq pmtdaqConfig.txt
+  317  l
+  318  less compile.sh 
+  319  ./pmtdaq pmtdaqConfig.txt
+  320  less compile.sh 
+  321  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px12_readpx12
+  322  less compile.sh 
+  323  cd ~/CAEN/Wavedump/wavedump-3.5.3/src/
+  324  emacs Makefile.pmtdaq &
+  325  cd -
+  326  ./compile.sh 
+  327  man gcc
+  328  cd -
+  329  emacs Makefile.pmtdaq 
+  330  bg
+  331  cd -
+  332  ./compile.sh 
+  333  l
+  334  emacs Makefile.pmtdaq  &
+  335  ./compile.sh 
+  336  ./pmtdaq pmtdaqConfig.txt
+  337  ./compile.sh 
+  338  ./pmtdaq pmtdaqConfig.txt
+  339  dd if=/dev/zero of=test bs=64k count=16k conv=fdatasync
+  340  df -a
+  341  sudo hdparm -Tt /dev/sda
+  342  l /tmp/
+  343  dd if=/dev/zero of=/tmp/output bs=8k count=10k; rm -f /tmp/output
+  344  dd if=/dev/zero of=/tmp/output bs=8k count=100k; rm -f /tmp/output
+  345  ./pmtdaq pmtdaqConfig.txt
+  346  l
+  347  rm wave_[01234567].dat
+  348  l
+  349  rm TR_0_0.dat 
+  350  l
+  351  cd ..
+  352  ls
+  353  cd daq/
+  354  ls
+  355  cd afterglow-data/
+  356  ls
+  357  ls -ltrh
+  358  mv trg_500k_1Gs_FB5235_tune5_1000V_px12_readpx12.dat trg_ped_10k_px12_readpx12.dat
+  359  mv sig_500k_1Gs_FB5235_tune5_1000V_px12_readpx12.dat sig_ped_10k_px12_readpx12.dat
+  360  cd ..
+  361  ls
+  362  ./pmtdaq pmtdaqConfig.txt
+  363  ./rename.sh ped_10k_px20_readpx12
+  364  ./pmtdaq pmtdaqConfig.txt
+  365  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px20_readpx12_delay0
+  366  ./pmtdaq pmtdaqConfig.txt
+  367  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px20_readpx12_delay900
+  368  ./pmtdaq pmtdaqConfig.txt
+  369  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px20_readpx12_delay1800
+  370  ./pmtdaq pmtdaqConfig.txt
+  371  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px20_readpx12_delay2700
+  372  ./pmtdaq pmtdaqConfig.txt
+  373  ./rename ped_10k_px28_readpx12
+  374  ./rename.sh ped_10k_px28_readpx12
+  375  ./pmtdaq pmtdaqConfig.txt
+  376  ./rename.sh ped_10k_px28_readpx12
+  377  ./pmtdaq pmtdaqConfig.txt
+  378  ./rename.sh ped_10k_px28_readpx12
+  379  ./pmtdaq pmtdaqConfig.txt
+  380  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px28_readpx12_delay0
+  381  ./pmtdaq pmtdaqConfig.txt
+  382  ./rename.sh ped_10k_px28_readpx12
+  383  ./pmtdaq pmtdaqConfig.txt
+  384  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px12_readpx4_delay0
+  385  ./pmtdaq pmtdaqConfig.txt
+  386  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px20_readpx4_delay0
+  387  ./pmtdaq pmtdaqConfig.txt
+  388  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px28_readpx28_delay0
+  389  CAENGECO2020 &
+  390  ./pmtdaq pmtdaqConfig.txt
+  391  CAENGECO2020 &
+  392  ./pmtdaq pmtdaqConfig.txt
+  393  ls
+  394  ./pmtdaq pmtdaqConfig.txt
+  395  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px28_readpx28_delay0
+  396  cd ..
+  397  ls
+  398  cd daq
+  399  ls
+  400  cd afterglow-data/
+  401  ls
+  402  mv trg_500k_1Gs_FB5235_tune10_1000V_px28_readpx28_delay0.dat
+  403  mv trg_500k_1Gs_FB5235_tune5_1000V_px28_readpx28_delay0.dat trg_500k_1Gs_FB5235_tune10_1000V_px28_readpx28_delay0.dat
+  404  mv sig_500k_1Gs_FB5235_tune5_1000V_px28_readpx28_delay0.dat sig_500k_1Gs_FB5235_tune10_1000V_px28_readpx28_delay0.dat
+  405  ls
+  406  cd ..
+  407  ./pmtdaq pmtdaqConfig.txt
+  408  ./rename.sh 500k_1Gs_FB5235_tune10_1000V_px28_readpx28_delay900
+  409  ./pmtdaq pmtdaqConfig.txt
+  410  ./rename.sh 500k_1Gs_FB5235_tune10_1000V_px28_readpx28_delay1800
+  411  ./pmtdaq pmtdaqConfig.txt
+  412  ./rename.sh 250k_1Gs_FB5235_tune10_1000V_px28_readpx4_delay0
+  413  ./pmtdaq pmtdaqConfig.txt
+  414  ./rename.sh 250k_1Gs_FB5235_tune10_1000V_px20_readpx4_delay0
+  415  ./pmtdaq pmtdaqConfig.txt
+  416  ./rename.sh 250k_1Gs_FB5235_tune10_1000V_px20_readpx12_delay0
+  417  ./pmtdaq pmtdaqConfig.txt
+  418  ls
+  419  ./pmtdaq pmtdaqConfig.txt
+  420  ls
+  421  ./pmtdaq pmtdaqConfig.txt
+  422  ./rename.sh  ped_10k_px60_readpx60
+  423  ./pmtdaq pmtdaqConfig.txt
+  424  ./rename.sh  ped_10k_px60_readpx60
+  425  ./pmtdaq pmtdaqConfig.txt
+  426  ./rename.sh 500k_1Gs_FB5235_tune10_1000V_px20_readpx12_delay0
+  427  cd ..
+  428  cd daq
+  429  ls
+  430  cd afterglow-data/
+  431  ls
+  432  ls -ltrh
+  433  mv 500k_1Gs_FB5235_tune10_1000V_px20_readpx12_delay0.dat 500k_1Gs_FB5235_tune10_1000V_px60_readpx60_delay0.dat
+  434  mv trg_500k_1Gs_FB5235_tune10_1000V_px20_readpx12_delay0.dat trg_500k_1Gs_FB5235_tune10_1000V_px60_readpx60_delay0.dat
+  435  mv sig_500k_1Gs_FB5235_tune10_1000V_px20_readpx12_delay0.dat sig_500k_1Gs_FB5235_tune10_1000V_px60_readpx60_delay0.dat
+  436  ls /ltrh
+  437  ls -ltrh
+  438  cd ..
+  439  ./pmtdaq pmtdaqConfig.txt
+  440  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px60_readpx60_delay900
+  441  ./pmtdaq pmtdaqConfig.txt
+  442  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px60_readpx60_delay1800
+  443  ./pmtdaq pmtdaqConfig.txt
+  444  PS
+  445  ps
+  446  top
+  447  ls
+  448  ./pmtdaq pmtdaqConfig.txt
+  449  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px60_readpx60_delay1800
+  450  ls
+  451  cd afterglow-data/
+  452  ls
+  453  cd ..
+  454  ./pmtdaq pmtdaqConfig.txt
+  455  ./rename.sh 500k_1Gs_FB5235_tune5_1000V_px60_readpx60_delay2700
+  456  ./pmtdaq pmtdaqConfig.txt
+  457  ll
+  458  ./pmtdaq pmtdaqConfig.txt
+  459  ll
+  460  ./rename.sh 5M_1Gs_FB5235_tune5_1000V_px60_readpx60_delay0
+  461  ll ../data/afterglow-data/
+  462  ll
+  463  rm -rf test 
+  464  ll
+  465  ./pmtdaq pmtdaqConfig.txt
+  466  ll
+  467  ./rename.sh 1M_1Gs_FB5235_tune10_1000V_px62_readpx62_delay0
+  468  ll ../data/afterglow-data/
+  469  ll afterglow-data/
+  470  ./pmtdaq pmtdaqConfig.txt
+  471  ./rename.sh ped_10k_px62_readpx62
+  472  ll afterglow-data/
+  473  ./pmtdaq pmtdaqConfig.txt
+  474  ./rename.sh 1M_1Gs_FB5235_tune10_1000V_px62_readpx62_delay900
+  475  ll afterglow-data/
+  476  ./pmtdaq pmtdaqConfig.txt
+  477  ./rename.sh 1M_1Gs_FB5235_tune10_1000V_px62_readpx62_delay1800
+  478  ll afterglow-data/
+  479  ./pmtdaq pmtdaqConfig.txt
+  480  ll afterglow-data/
+  481  ./rename.sh 1M_1Gs_FB5235_tune10_1000V_px62_readpx62_delay2700
+  482  ll afterglow-data/
+  483  ll
+  484  ll afterglow-data/
+  485  ./pmtdaq pmtdaqConfig.txt
+  486  ./rename.sh ped_10k_px59_readpx59
+  487  ll afterglow-data/
+  488  ./pmtdaq pmtdaqConfig.txt
+  489  ll afterglow-data/
+  490  ./rename.sh 1M_1Gs_FB5235_tune5_1000V_px59_readpx59_delay0
+  491  ll afterglow-data/
+  492  ll
+  493  jobs
+  494  ll 
+  495  ll afterglow-data/
+  496  ll ~/Desktop/
+  497  cd ~/Desktop/
+  498  rm ACFrOgCpgaCFJp0Kee1yzpPLaltgeMdJQHm0_EHeKHuTZpxfUYwVeDCmANuBT8OOyLZPsZ9d7xePdNaGY3hhbwCfGTjf7IfNVDqY0mBxH2TyV2mCun0xpHZHbXv7O_I\=.pdf 
+  499  acroread pippo.pdf &
+  500  cd -
+  501  ./pmtdaq pmtdaqConfig.txt
+  502  ll
+  503  ./rename.sh 5M_1Gs_FB5235_tune5_1000V_px59_readpx59_delay0
+  504  ll
+  505  ll afterglow-data/
+  506  ./pmtdaq pmtdaqConfig.txt
+  507  ll 
+  508  ll afterglow-data/
+  509  ./rename.sh ped_10k_px1_readpx1
+  510  ll afterglow-data/
+  511  ./rename.sh ped_10k_px1_readpx1
+  512  ll afterglow-data/
+  513  ./pmtdaq pmtdaqConfig.txt
+  514  ll
+  515  ll afterglow-data/
+  516  ./rename.sh 1M_1Gs_FB5235_tune10_1000V_px1_readpx1_delay0.dat
+  517  ll afterglow-data/
+  518  ll
+  519  ll afterglow-data/
+  520  ll
+  521  ll afterglow-data/
+  522  cd afterglow-data/
+  523  mv trg_1M_1Gs_FB5235_tune10_1000V_px1_readpx1_delay0.dat.dat trg_1M_1Gs_FB5235_tune10_1000V_px1_readpx1_delay0.dat
+  524  mv sig_1M_1Gs_FB5235_tune10_1000V_px1_readpx1_delay0.dat.dat sig_1M_1Gs_FB5235_tune10_1000V_px1_readpx1_delay0.dat
+  525  ll 
+  526  ./pmtdaq pmtdaqConfig.txt
+  527  cd -
+  528  ./pmtdaq pmtdaqConfig.txt
+  529  ll
+  530  ./rename.sh 5M_1Gs_FB5235_tune10_1000V_px1_readpx1_delay0
+  531  ll afterglow-data/
+  532  jobs
+  533  kill %6
+  534  jobs
+  535  ll afterglow-data/
+  536  ll
+  537  ll afterglow-data/
+  538  ./pmtdaq pmtdaqConfig.txt
+  539  ll
+  540  rm wave_1.dat TR_0_0.dat 
+  541  ll
+  542  cd afterglow-data
+  543  l
+  544  ll
+  545  ll
+  546  cd ..
+  547  du -h afterglow-data/
+  548  du -h afterglow-data/1M*
+  549  du -h afterglow-data/*1M*
+  550  du -h afterglow-data/*5M*
+  551  df -h
+  552  ll
+  553  cd afterglow-data/
+  554  ll
+  555  rm -rf *pmtold*
+  556  df -h
+  557  ls
+  558  ll
+  559  ls -ltr
+  560  ls
+  561  ll
+  562  df -h
+  563  ll
+  564  rm *5M*
+  565  rm -rf *5M*
+  566  df -h
+  567  ll
+  568  cd ..
+  569  ll
+  570  jobs
+  571  d f-h
+  572  df -h
+  573  exit
+  574  df -h
+  575  ssh -XY lxlhcb3
+  576  ll
+  577  cd afterglow-data/
+  578  ll
+  579  rm *500k*
+  580  rm -rf *500k*
+  581  df -h
+  582  ll
+  583  rm -rf *250k*
+  584  df -h
+  585  ll 
+  586  emacs pmtdaqConfig.txt &
+  587  CAENGECO2020 &
+  588  ll
+  589  jobs
+  590  ./pmtdaq pmtdaqConfig.txt
+  591  ll
+  592  ./rename.sh 5M_1Gs_FB5235_tune10_900V_px1_readpx1_delay0
+  593  ll afterglow-data/
+  594  ./pmtdaq pmtdaqConfig.txt
+  595  ll
+  596  ll afterglow-data/
+  597  ll 
+  598  ./rename.sh ped_10k_px8_readpx8
+  599  ll afterglow-data/
+  600  ./rename.sh ped_10k_px8_readpx8
+  601  ll 
+  602  ll afterglow-data/
+  603  ./pmtdaq pmtdaqConfig.txt
+  604  ./rename.sh ped_10k_px8_readpx8
+  605  ll afterglow-data/
+  606  ./pmtdaq pmtdaqConfig.txt
+  607  ll
+  608  ll afterglow-data/
+  609  ./rename.sh 5M_1Gs_FB5235_tune15_1000V_px8_readpx8_delay0
+  610  ll afterglow-data/
+  611  ll
+  612  ./pmtdaq pmtdaqConfig.txt
+  613  ll
+  614  ./pmtdaq pmtdaqConfig.txt
+  615  ll
+  616  ll afterglow-data/
+  617  ll
+  618  ./pmtdaq pmtdaqConfig.txt
+  619  qqq
+  620  jobs
+  621  ./pmtdaq pmtdaqConfig.txt
+  622  ll
+  623  ll afterglow-data/
+  624  ./rename.sh 2M_1Gs_FB5235_tune15_1100V_px8_readpx8_delay0
+  625  ll afterglow-data/
+  626  df -h
+  627  l
+  628  ll afterglow-data/
+  629  ./pmtdaq pmtdaqConfig.txt
+  630  ll 
+  631  ll afterglow-data/
+  632  ll
+  633  ./rename.sh 5M_1Gs_FB5235_tune15_900V_px8_readpx8_delay0
+  634  ll afterglow-data/
+  635  ./pmtdaq pmtdaqConfig.txt
+  636  df -h
+  637  ll
+  638  ll afterglow-data/
+  639  ./pmtdaq pmtdaqConfig.txt
+  640  jobs
+  641  fg
+  642  ll
+  643  ./rename.sh 5M_1Gs_FB5235_tune15_850V_px8_readpx8_delay0
+  644  ll afterglow-data/
+  645  jobs
+  646  cd
+  647  emacs ip-camera-nebbia.txt
+  648  bg
+  649  ssh  nebbia@10.64.22.197:/data/
+  650  ssh  nebbia@10.64.22.197
+  651  nslookup 10.64.22.197
+  652  ping 10.64.22.197
+  653  ssh nebbia@10.64.22.197
+  654  nslookup 192.135.16.105
+  655  l
+  656  exit
+  657  df
+  658  sudo su -
+  659  cd .config/
+  660  du -sh .
+  661  du -sh *
+  662  cd google-chrome/
+  663  ls
+  664  du -sh *du -sk * | sort -n
+  665  du -sk * | sort -n
+  666  du -sk Default/* | sort -n
+  667  du -sk Default/*:wq | sort -n
+  668  picoscope &
+  669  ping lhcb@lxlhcb2
+  670  ping lxlhcb2
+  671  ll
+  672  cd g-2/
+  673  ll
+  674  cd da
+  675  cd daq/
+  676  ll
+  677  cd picodaq/
+  678  ll
+  679  vim main.cc 
+  680  ll *cc
+  681  ll *c
+  682  ll *h
+  683  vim DeviceManager.h
+  684  vim DeviceManager.cc
+  685  ll
+  686  vim Event.cc 
+  687  vim DeviceManager.cc
+  688  ll
+  689  fg
+  690  ll
+  691  ls
+  692  ll SDK/
+  693  ll SDK/src/
+  694  exit
+  695  ls
+  696  cd g-2
+  697  ;s
+  698  ls
+  699  cd da
+  700  cd daq/
+  701  ls
+  702  cd picodaq/
+  703  ls
+  704  emacs DeviceManager.cc &
+  705  jobs
+  706  %1
+  707  fg
+  708  emacs DeviceManager.cc &
+  709  acquires data (user sets trigger mode before calling), displays 10 item
+  710  logout
+  711  ls
+  712  cd g-2
+  713  ls
+  714  cd daq
+  715  ls
+  716  cd picodaq/
+  717  ls
+  718  emacs DeviceManager.cc &
+  719  cd g-2/daq/picodaq/
+  720  ll
+  721  vim DeviceManager.cc
+  722  emacs DeviceManager.cc &
+  723  ls -ltrh
+  724  ls
+  725  emacs Event.cc &
+  726  ls
+  727  cd ..
+  728  ls
+  729  emacs Makefile &
+  730  ls -ltra
+  731  make -f Makefile.mudaq 
+  732  less Makefile.mudaq 
+  733  grep picodaq *
+  734  ls src/
+  735  ls -ltra
+  736  cd picodaq/
+  737  l
+  738  grep picodaq *
+  739  grep picodaq * 
+  740  grep picodaq * | grep -v include
+  741  grep -i comp *
+  742  grep -i compil *
+  743  less compile
+  744  cd ../
+  745  tar  -cvzf picodaq.tgz ./picodaq/
+  746  scp picodaq.tgz  picoscope@lxpicoscope.pd.infn.it:~/
+  747  exit
+  748  cd g-2/
+  749  l
+  750  cd da
+  751  l
+  752  cd daq/
+  753  l
+  754  cd picodaq/
+  755  ls 
+  756  ls -ltra
+  757  less README.txt
+  758  less gainconfigch1.txt
+  759  less main.cc 
+  760  less DeviceManager.cc
+  761  less DeviceManager.h 
+  762  l
+  763  less main.cc 
+  764  emacs main.cc  &
+  765  fg
+  766  rxit
+  767  exit
+  768  ssh -Y picoscope@lxpicoscope
+  769  ping picoscope@lxpicoscope
+  770  ping lxpicoscope
+  771  exit
+  772  ssh lxlhcb3
+  773  exit
+  774  cd rich-qa/
+  775  ll
+  776  cd pmt-test-facility/
+  777  ll
+  778  cd daq/
+  779  ll
+  780  cd ..
+  781  cd //
+  782  cd ..
+  783  cd
+  784  cd  rich-pd/
+  785  cd da
+  786  cd daq
+  787  ll
+  788  cd pmt-test-facility/daq/
+  789  ll 
+  790  ll ../data/
+  791  ssh lhcb@lxlhcb2
+  792  CAENGECO2020 &
+  793  emacs pmtdaqConfig.txt &
+  794  ./pmtdaq pmtdaqConfig.txt
+  795  picoscope &
+  796  ./pmtdaq pmtdaqConfig.txt
+  797  df -h
+  798  ./pmtdaq pmtdaqConfig.txt
+  799  picoscope &
+  800  df -h
+  801  ll
+  802  df -h
+  803  ll
+  804  ls -ltre
+  805  ls -ltr ../data/
+  806  ls -ltr ../data/afterglow-data/
+  807  df -h
+  808  picoscope &
+  809  ll
+  810  jobs
+  811  kk
+  812  ls -ltrh
+  813  ll ../data/
+  814  ll ../data/afterglow-data/
+  815  ls -ltrh
+  816  ls -ltrh ../data/afterglow-data/
+  817  ll
+  818  exit
+  819  pwd
+  820  ifconfig 
+  821  nslookup 192.135.16.129
+  822  route -n
+  823  ping 192.135.16.0
+  824  ping 192.135.16.1
+  825  ping 192.135.16.255
+  826  ping 192.135.16.254
+  827  cd /etc/
+  828  cd sysconfig/
+  829  cd network-scripts/
+  830  ls
+  831  less  ifcfg-eth0 
+  832  ls -ltra
+  833  less  ifcfg-eth01
+  834  less  ifcfg-eth1 
+  835  dmesg 
+  836  ifconfig 
+  837  dmesg 
+  838  route -n
+  839  ping google.com
+  840  ls -ltra
+  841  less unipd.ifcfg-eth1 
+  842  cd ../
+  843  find ./ -name "
+  844  find ./ -name "*unipd*" -print
+  845  less network.unipd 
+  846  cd ../
+  847  find ./ -name "*unipd*" -print
+  848  find ./ -name "*infn*" -print
+  849  find ./ -name "*unipd*" -print
+  850  sudo mv hosts hosts.infn
+  851  sudo mv hosts.unipd hosts
+  852  cd sysconfig/
+  853  sudo mv network network.infn
+  854  sudo mv network.unipd network
+  855  cd network-scripts/
+  856  sudo mb ifcfg-eth1 ifcfg-eth1.infn
+  857  sudo mv ifcfg-eth1 ifcfg-eth1.infn
+  858  sudo mv unipd.ifcfg-eth1 ifcfg-eth1
+  859  sudo reboot
+  860  cd /etc/
+  861  cd sysconfig/
+  862  cd network-scripts/
+  863  l
+  864  sudo mv ifcfg-eth1.infn  infn.ifcfg-eth1
+  865  route -n
+  866  ping google.com
+  867  cd
+  868  cd  g-2/
+  869  l
+  870  cd da
+  871  cd daq/
+  872  l;
+  873  ls -ltra
+  874  ls
+  875  cd src/
+  876  ls -tlra
+  877  ./CAENVMEDemo 
+  878  ./CAENVMEDemo V2718
+  879  ./CAENVMEDemo V2718 V1742
+  880  ./CAENVMEDemo V2718 1742
+  881  ./CAENVMEDemo V2718 V1742 0
+  882  ./discrConfig
+  883  cd ../
+  884  cd -
+  885  grep src *
+  886  grep -w src *
+  887  ls
+  888  l
+  889  grep -w src *
+  890  ./discrConfig
+  891  emacs discrConfig.c &
+  892  picoscope 
+  893  picoscope yum
+  894  yum list
+  895  man yum
+  896  yum list installed pico*
+  897  sudo curl -o /etc/yum.repos.d/picoscope.repo https://labs.picotech.com/rpm/picoscope.repo
+  898  c
+  899  cd
+  900  picoscope 
+  901  cd
+  902  cd  g-2/
+  903  cd daq/
+  904  cd picodaq
+  905  l
+  906  ./compile
+  907  ./picodaq  gainconfigch1.txt
+  908  q
+  909  ls
+  910  pico histo.cpp 
+  911  nano histo.cpp 
+  912  cp histo.cpp histo.C
+  913  nano histo.C
+  914  cp histo.C histo.cxx
+  915  nano histo.cxx 
+  916  clear
+  917  ls
+  918  nano histo.C 
+  919  nano graphRoot.cpp 
+  920  exit
+  921  top
+  922  exit
+  923  ./discrConfigTestMisc 
+  924  top
+  925  clear
+  926  exit
+  927  picoscope
+  928  ./compile
+  929  ./picodaq gainconfigch1.txt
+  930  nano README.txt
+  931  nano gainconfigch1.txt
+  932  nano README.txt
+  933  nano Readme2017.txt
+  934  nano landauFit.C
+  935  gedit landauFit.C
+  936  bg
+  937  picoscope 
+  938  cd /etc/
+  939  cd yum.repos.d/
+  940  less picoscope.repo 
+  941  sudo rpmkeys --import https://labs.picotech.com/rpm/repodata/repomd.xml.key
+  942  rpmkeys
+  943  sudo yum check-update
+  944  picoscope 
+  945  picoscope
+  946  picoscope 
+  947  cd g-2/daq/
+  948  ls -tlra
+  949  cd picodaq
+  950  ls -tlra
+  951  top
+  952  picoscope 
+  953  cd g-2
+  954  cd daaq
+  955  cd daq/
+  956  cd src/
+  957  cd ../
+  958  cd picodaq
+  959  ls
+  960  ./compile
+  961  ls -ltra
+  962  emacs gainconfigch2.txt &
+  963  ./picodaq gainconfigch2.txt
+  964  root -l testF2Gain.root 
+  965  root -l 
+  966  diff gainconfigch2.txt gainconfigch1.txt
+  967  ./picodaq gainconfigch1.txt
+  968  root -l
+  969  l
+  970  ls -ltra *.root
+  971  rm *.root
+  972  ls -ltra *.root
+  973  rm *.root
+  974  cd ../
+  975  ls
+  976  cd ../
+  977  ls
+  978  cd workdir/
+  979  l
+  980  root -l 
+  981  ../daq/picodaq/picodaq ../daq/picodaq/gainconfigch1.txt 
+  982  root -l
+  983  ls -l
+  984  history
+  985  make discrConfigEff2019.c
+  986  make -f Makefile.vmedemoEff2019
+  987  ./discrConfigEff2019 
+  988  exit
+  989  cd
+  990  picoscope
+  991  bg
+  992  exit
+  993  ./discrConfigEff2019 
+  994  make discrConfigEff2019.c
+  995  make -f Makefile.vmedemoEff2019
+  996  ./discrConfigEff2019 
+  997  history
+  998  history > hist.txt

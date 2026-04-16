@@ -1,0 +1,101 @@
+programming trigger board
+
+configuring channel 1
+writing in register 0x1000
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+
+writing in register 0x3000
+setting the signal delay to 100.000000 ns, DAC 19, hex 0x13 
+ Cycle(s) completed normally
+
+writing in register 0x4000
+setting the width to 160.580002 ns, DAC 33, mask to 0x21 
+ Cycle(s) completed normally
+configuring channel 2
+writing in register 0x1004
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+
+writing in register 0x3000
+setting the signal delay to 100.000000 ns, DAC 19, hex 0x113 
+ Cycle(s) completed normally
+
+writing in register 0x4000
+setting the width to 160.580002 ns, DAC 33, mask to 0x121 
+ Cycle(s) completed normally
+configuring channel 3
+writing in register 0x1008
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+
+writing in register 0x3000
+setting the signal delay to 100.000000 ns, DAC 19, hex 0x213 
+ Cycle(s) completed normally
+
+writing in register 0x4000
+setting the width to 160.580002 ns, DAC 33, mask to 0x221 
+ Cycle(s) completed normally
+configuring channel 4
+writing in register 0x100c
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+
+writing in register 0x3000
+setting the signal delay to 72.500000 ns, DAC 9, hex 0x309 
+ Cycle(s) completed normally
+
+writing in register 0x4000
+setting the width to 215.300003 ns, DAC 45, mask to 0x32d 
+ Cycle(s) completed normally
+configuring channel 5
+writing in register 0x1010
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+
+writing in register 0x3000
+setting the signal delay to 72.500000 ns, DAC 9, hex 0x409 
+ Cycle(s) completed normally
+
+writing in register 0x4000
+setting the width to 160.580002 ns, DAC 33, mask to 0x421 
+ Cycle(s) completed normally
+configuring channel 6
+writing in register 0x1014
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+
+writing in register 0x3000
+setting the signal delay to 72.500000 ns, DAC 9, hex 0x509 
+ Cycle(s) completed normally
+
+writing in register 0x4000
+setting the width to 160.580002 ns, DAC 33, mask to 0x521 
+ Cycle(s) completed normally
+
+
+writing in register 0x2000
+setting the polarity mask to 0xffff 
+ Cycle(s) completed normally
+ Cycle(s) completed normally
+check jdiscdata: read in 0x602000 value 0xffffffff
+
+writing in register 0x5008
+setting the channel mask to 0xfff0 
+ Cycle(s) completed normally
+check jdiscdata: read in 0x605008 value 0xfffefff0
+ Cycle(s) completed normally
+check jdiscdata: read in 0x605008 value 0xfffefff0
+writing in register 0x500c
+setting the channel mask to 0xfff0 
+ Cycle(s) completed normally
+check jdiscdata: read in 0x60500c value 0xfffefff0
+ Cycle(s) completed normally
+check jdiscdata: read in 0x60500c value 0xfffefff0
+
+writing in register 0x5018
+setting the channel veto mask to 0x0 
+ Cycle(s) completed normally
+check jdiscdata: read in 0x605018 value 0xffff0000
+ Cycle(s) completed normally
+check jdiscdata: read in 0x605018 value 0xffff0000

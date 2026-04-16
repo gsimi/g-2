@@ -1,0 +1,140 @@
+DEBUG 0: 1	
+DEBUG 1: 2	
+DEBUG 10: 1024	
+DEBUG 11: 2048	
+DEBUG 12: 4096	
+DEBUG 13: 8192	
+DEBUG 14: 16384	
+DEBUG 15: 32768	
+programming trigger board
+
+configuring channel 0
+writing in register 0x1000
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+writing in register 0x3000
+setting the signal delay to 100.000000 ns, DAC 20, hex 0x14 
+ Cycle(s) completed normally
+writing in register 0x4000
+setting the signal width to 160.580002 ns, DAC 33, hex 0x21 
+ Cycle(s) completed normally
+
+configuring channel 1
+writing in register 0x1000
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+writing in register 0x3000
+setting the signal delay to 100.000000 ns, DAC 20, hex 0x114 
+ Cycle(s) completed normally
+writing in register 0x4000
+setting the signal width to 160.580002 ns, DAC 33, hex 0x121 
+ Cycle(s) completed normally
+
+configuring channel 2
+
+configuring channel 3
+
+configuring channel 4
+
+configuring channel 5
+
+configuring channel 6
+
+configuring channel 7
+
+configuring channel 8
+
+configuring channel 9
+
+configuring channel 10
+writing in register 0x1000
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+writing in register 0x3000
+setting the signal delay to 100.000000 ns, DAC 20, hex 0xa14 
+ Cycle(s) completed normally
+writing in register 0x4000
+setting the signal width to 160.580002 ns, DAC 33, hex 0xa21 
+ Cycle(s) completed normally
+
+configuring channel 11
+writing in register 0x1000
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+writing in register 0x3000
+setting the signal delay to 100.000000 ns, DAC 20, hex 0xb14 
+ Cycle(s) completed normally
+writing in register 0x4000
+setting the signal width to 160.580002 ns, DAC 33, hex 0xb21 
+ Cycle(s) completed normally
+
+configuring channel 12
+writing in register 0x1000
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+writing in register 0x3000
+setting the signal delay to 100.000000 ns, DAC 20, hex 0xc14 
+ Cycle(s) completed normally
+writing in register 0x4000
+setting the signal width to 160.580002 ns, DAC 33, hex 0xc21 
+ Cycle(s) completed normally
+
+configuring channel 13
+writing in register 0x1000
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+writing in register 0x3000
+setting the signal delay to 100.000000 ns, DAC 20, hex 0xd14 
+ Cycle(s) completed normally
+writing in register 0x4000
+setting the signal width to 160.580002 ns, DAC 33, hex 0xd21 
+ Cycle(s) completed normally
+
+configuring channel 14
+writing in register 0x1000
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+writing in register 0x3000
+setting the signal delay to 100.000000 ns, DAC 20, hex 0xe14 
+ Cycle(s) completed normally
+writing in register 0x4000
+setting the signal width to 160.580002 ns, DAC 33, hex 0xe21 
+ Cycle(s) completed normally
+
+configuring channel 15
+writing in register 0x1000
+setting the jthreshold to -50.000000 mV, 490 DAC, 0x1ea 
+ Cycle(s) completed normally
+writing in register 0x3000
+setting the signal delay to 100.000000 ns, DAC 20, hex 0xf14 
+ Cycle(s) completed normally
+writing in register 0x4000
+setting the signal width to 160.580002 ns, DAC 33, hex 0xf21 
+ Cycle(s) completed normally
+
+writing in register 0x2000
+setting the polarity mask to 0xffff 
+ Cycle(s) completed normally
+check jdiscdata: read in 0x602000 value 0xffffffff
+ Cycle(s) completed normally
+checking jdiscdata: read in 0x602000 value 0xffffffff
+
+writing in register 0x5004
+setting the channel mask to 0xfffc 
+ Cycle(s) completed normally
+check jdiscdata: read in 0x605004 value 0xfffefffc
+ Cycle(s) completed normally
+checking jdiscdata: read in 0x605004 value 0xfffefffc
+writing in register 0x5008
+setting the channel mask to 0x3ff 
+ Cycle(s) completed normally
+check jdiscdata: read in 0x605008 value 0xfffe03ff
+ Cycle(s) completed normally
+checking jdiscdata: read in 0x605008 value 0xfffe03ff
+writing in register 0x500c
+setting the channel mask to 0xffff 
+ Cycle(s) completed normally
+check jdiscdata: read in 0x60500c value 0xfffeffff
+ Cycle(s) completed normally
+checking jdiscdata: read in 0x60500c value 0xfffeffff
+

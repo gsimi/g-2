@@ -1,0 +1,116 @@
+cd g-2
+  894  l
+  895  cd workdir/
+  896  l
+  897  cd analysis/
+  898  ;
+  899  l
+  900  cd
+  901  cd g-2
+  902  cd daq/
+  903  l;
+  904  cd src/
+  905  l
+  906  cd ..
+  907  l
+  908  less getAriettaData
+  909  less startAcquisition
+  910  less getAriettaData
+  911  less startAcquisition
+  912  pwd
+  913  nano getAriettaData
+  914  nano startAcquisition
+  915  source getAriettaData
+  916  ls
+  917  source getAriettaData
+  918  nano getAriettaData
+  919  source startAcquisition
+  920  ssh root@10.42.0.10  
+  921  ls
+  922  cd g-2
+  923  ls
+  924  cd daq/
+  925  ls
+  926  cd g-2
+  927  ls
+  928  cd daq/
+  929  ls
+  930  pwd
+  931  ls
+  932  ssh root@10.42.0.10   cat  /sys/devices/soc0/tc_measuretime@0/measure | awk '{s+=$1; sq+=$1*$1; i+=1;} END{mu=s/i; muq=sq/i; var= muq-mu*mu; rms=sqrt(var); print "mu = ",mu," rms = ",rms, "ev letti ",i}'
+  933  ssh root@10.42.0.10   cat  /sys/devices/soc0/tc_measuretime@0/measure
+  934  ssh root@10.42.0.10  cat  /sys/devices/soc0/tc_measuretime@0/measure
+  935  ssh root@10.42.0.10   cat  /sys/devices/soc0/tc_measuretime@0/measure | awk '{s+=$1; sq+=$1*$1; i+=1;} END{mu=s/i; muq=sq/i; var= muq-mu*mu; rms=sqrt(var); print "mu = ",mu," rms = ",rms, "ev letti ",i}'
+  936  ssh root@10.42.0.10  
+  937  source getAriettaData
+  938  nano getAriettaData
+  939  source getAriettaData
+  940  ssh root@10.42.0.10   cat  /sys/devices/soc0/tc_measuretime@0/measure | awk '{s+=$1; sq+=$1*$1; i+=1;} END{mu=s/i; muq=sq/i; var= muq-mu*mu; rms=sqrt(var); print "mu = ",mu," rms = ",rms, "ev letti ",i}'
+  941  source getAriettaData
+  942  source startAcquisition
+  943  ssh root@10.42.0.10   cat  /sys/devices/soc0/tc_measuretime@0/measure | awk '{s+=$1; sq+=$1*$1; i+=1;} END{mu=s/i; muq=sq/i; var= muq-mu*mu; rms=sqrt(var); print "mu = ",mu," rms = ",rms, "ev letti ",i}'
+  944  source startAcquisition
+  945  ssh root@10.42.0.10   cat  /sys/devices/soc0/tc_measuretime@0/measure | awk '{s+=$1; sq+=$1*$1; i+=1;} END{mu=s/i; muq=sq/i; var= muq-mu*mu; rms=sqrt(var); print "mu = ",mu," rms = ",rms, "ev letti ",i}'
+  946  ssh root@10.42.0.10  <<ENDSSH
+  947  ssh root@10.42.0.10   cat  /sys/devices/soc0/tc_measuretime@0/measure | awk '{s+=$1; sq+=$1*$1; i+=1;} END{mu=s/i; muq=sq/i; var= muq-mu*mu; rms=sqrt(var); print "mu = ",mu," rms = ",rms, "ev letti ",i}'
+  948  sh root@10.42.0.10  <<ENDSSH
+  949  ssh root@10.42.0.10 "for i in $(seq 1 15 ); do cat  /sys/devices/soc0/tc_measuretime@; 0/measure ; done"
+  950  ssh root@10.42.0.1
+  951  emacs ./discrConfigEff2020.cb,jijj\k
+  952  ssh root@10.42.0.10   cat  /sys/devices/soc0/tc_measuretime@0/measure | awk '{s+=$1; sq+=$1*$1; i+=1;} END{mu=s/i; muq=sq/i; var= muq-mu*mu; rms=sqrt(var); print "mu = ",mu," rms = ",rms, "ev letti ",i}'
+  953  ssh root@10.42.0.10   cat  /sys/devices/soc0/tc_measuretime@0/measure 
+  954  sudo ifconfig usb0 10.42.0.1
+  955  source getAriettaData
+  956  source startAcquisition
+  957  source getAriettaData
+  958  source startAcquisition
+  959  ssh root@10.42.0.10  cat  /sys/devices/soc0/tc_measuretime@0/measure >> $1-`date +"%Y.%m.%d"`.dat
+  960  source getAriettaData
+  961  source startAcquisition
+  962  ls -ltra
+  963  ls -ltra .ssh/
+  964  ls -ltra .ssh/authorized_keys 
+  965  cat .ssh/authorized_keys 
+  966  sudo su -
+  967  l
+  968  cd g-2
+  969  l
+  970  cd daq/
+  971  l
+  972  cd picodaq
+  973  l
+  974  ./picodaq gainconfigch1.txt
+  975  l
+  976  root -l test.root 
+  977  l *CC *C *.c*
+  978  root -l ReadTree.C
+  979  root -l 
+  980  pwd
+  981  ls
+  982  picodaq
+  983  picoscope 
+  984  pwd
+  985  picodaq
+  986  cd picodaq
+  987  picoscope 
+  988  less README.txt
+  989  cp -a picodaq picodaq.bak
+  990  ./compile
+  991  l
+  992  ./picodaq ./gainconfigch1.txt 
+  993  less README.txt
+  994  l
+  995  root -l test-nov2020.root 
+  996  l
+  997  l *V
+  998  l *C
+  999  root -l 
+ 1000  l ../../analysis/
+ 1001  l ../../analysis/macro/
+ 1002  l ../../workdir/
+ 1003  less findMaximumSiPM.C
+ 1004  root -l
+ 1005  hystory
+ 1006  history
+lhcb@lxsuperb3:picodaq$ 
+

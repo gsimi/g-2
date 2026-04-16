@@ -1,0 +1,47 @@
+########################################################################
+#                                                                      
+#              --- CAEN SpA - Computing Division ---                   
+#                                                                      
+#   CAENVMElib Software Project                                        
+#                                                                      
+#   Created  :  March 2004      (Rel. 1.0)                                             
+#                                                                      
+#   Auth: S. Coluccini                                                 
+#                                                                      
+########################################################################
+
+DISCREXE =      discrConfigEff2019
+
+CC	=	gcc
+
+COPTS	=	-fPIC -DLINUX -Wall 
+#COPTS	=	-g -fPIC -DLINUX -Wall 
+
+FLAGS	=	-Wall -s
+#FLAGS	=	-Wall
+
+DEPLIBS	=       -l CAENVME -l ncurses -lc -lm
+
+LIBS	=	
+
+INCLUDEDIR =	-I../../CAENVMEDemo/inc
+
+DISCROBJS =     discrConfigEff2019.o
+
+INCLUDES =	../../CAENVMEDemo/inc/CAENVMElib.h ../../CAENVMEDemo/inc/CAENVMEtypes.h ../../CAENVMEDemo/inc/CAENVMEoslib.h
+
+#########################################################################
+
+all	:	$(DISCREXE)
+
+clean	:
+		/bin/rm -f $(DISCROBJS) $(DISCREXE)
+
+$(DISCREXE) :   $(DISCROBJS)
+	        /bin/rm -f $(DISCREXE)
+		$(CC) $(FLAGS) -o $(DISCREXE) $(DISCROBJS) $(DEPLIBS)
+
+$(DISCROBJS) :	$(INCLUDES) Makefile.vmedemoEff2019
+
+%.o	:	%.c
+		$(CC) $(COPTS) $(INCLUDEDIR) -c -o $@ $<

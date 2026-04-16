@@ -1,0 +1,380 @@
+#include "CAENVMElib.h"
+#include<time.h>
+#include <unistd.h>
+
+
+void caenvmecheck(CVErrorCodes  ret){
+    switch (ret)
+      {
+      case cvSuccess   : printf(" Cycle(s) completed normally\n");
+	break ;
+      case cvBusError	 : printf(" Bus Error !!!");
+	break ;				   
+      case cvCommError : printf(" Communication Error !!!");
+	break ;
+      default          : printf(" Unknown Error !!!");
+	break ;
+      }
+}
+
+void
+caenvmereadcheck(CVErrorCodes ret, uint32_t vmeaddr, uint32_t jdiscdata){
+  caenvmecheck(ret);
+  printf( "check jdiscdata: read in 0x%x value 0x%x\n",vmeaddr,jdiscdata);
+}
+
+enum polarity_t{ positive, negative};
+/* ########################################################################### */
+/* MAIN                                                                        */
+/* ########################################################################### */
+int main(int argc, char *argv[])
+{
+
+
+  /*
+    programning the discriminator/trigger board
+  */
+
+  /*
+      
+    Configured correctly using CAENVMEDemo v2742 0 0
+      
+    CAEN VME Manual Controller
+      
+    R - READ
+    W - WRITE
+    B - BLOCK TRANSFER READ
+    T - BLOCK TRANSFER WRITE
+    I - CHECK INTERRUPT
+    1 - ADDRESS                  [00805004]
+    2 - BASE ADDRESS             [00800000]
+    3 - DATA FORMAT              [D32]
+    4 - ADDRESSING MODE          [A24]
+    5 - BLOCK TRANSFER SIZE      [256]
+    6 - AUTO INCREMENT ADDRESS   [OFF]
+    7 - NUMBER OF CYCLES         [1]
+    8 - VIEW BLT DATA
+    F - FRONT PANEL I/O
+    Q - QUIT MANUAL CONTROLLER
+      
+      
+    Cycle(s) completed normally
+    Read 256 bytes
+    configurig chanel 2
+    write in 0x801004 value 0x1f7 : threshold -50mv
+    write in 0x802000 value 0xffff : negative polarity
+    write in 0x803000 value 0x100 : 0 delay
+    write in 0x804000 value 0x10a : 50 ns width
+    write in 0x805004 value 0xfffefffd : trigger enabled for ch2
+    write in 0x805004 value 0xfffefff9 : trigger enabled for ch2 & 3
+    write in 0x805004 value 0xfffefff1 : trigger enabled for ch2 & 3 & 4
+    write in 0x805004 value 0xfffefff0 : trigger enabled for ch1 & 2 & 3 & 4
+      
+  */
+    
+  /* 
+     CHANNEL CONFIGURATION 
+  */
+
+  #define nch  6
+  int channel[nch]  =  {3,12,5,6,7,8};  //channel=[1:16]
+  float jthreshold[nch]  =  {
+    /* -32,     */
+    /* -35, */
+    -80,
+    -85,
+    -76,
+    -79,//no
+    -77,//no
+    -83}; //[mV]
+  int polarity[nch]      =  {negative,     
+			     negative,     
+			     negative,    
+			     negative,
+			     negative,
+			     negative};
+  // mask of enabled channels.  This mask also determines the channels used in the coincidence
+  // for lifetime 
+  // uint32_t enabled_channel = 0x000f;
+  // uint32_t veto_mask = 0x0008;  //mask of veto channels
+
+  /* for efficiecy studies */
+  // *** (vedi note p.45 discriminatore_v4) i primi 4 hexad (16bit) sono ininfluenti 
+  // *** e.g. 0x0600 attiva i canali 10 e 11
+  
+  // DEVE ESSERE ABILITATO ANCHE IL CANALE DEL VETO NEL TRIGGER ALTRIMENTI NON LO LEGGE	
+
+  //  uint32_t enabled_channels[3] = {   0x0834,  0x0030 , 0x0000}; // 0 --> trg   1 --> signal // *** non funziona il segnale sul canale 10, ora bypassato  
+  uint32_t ch1a=0x0004;   uint32_t ch1b=0x0800; 
+  uint32_t ch2a=0x0010;   uint32_t ch2b=0x0020; 
+  uint32_t ch3a=0x0040;   uint32_t ch3b=0x0080; 
+  /*uint32_t enabled_channels[3] = {   ch1a|ch1b|ch2a|ch2b,  
+				     ch1a|ch1b|ch3a|ch3b,  
+				     ch2a|ch2b|ch3a|ch3b}; 
+  
+    uint32_t enabled_channels[3] = {   ch1a|ch1b, ch2a|ch2b,  ch3a|ch3b};
+    uint32_t enabled_channels[3] = {   ch1a,      ch2a,       ch3a};
+  */
+  uint32_t enabled_channels[3] = {   ch1a|ch1b|ch2a|ch2b|ch3a|ch3b,
+				     0x0, 0x0};
+
+  // 0011 0101 0000 0000
+  // 3    5    0    0
+  //uint32_t enabled_channels[3] = {   0x1e00,  0x9e00 , 0xc000 }; // 0 --> trg   1 --> signal // *** per misurare E1, senza canale 15 
+  //uint32_t enabled_channels[3] = {   0x1c00,  0xd800 , 0xc000 }; // 0 --> trg   1 --> signal // *** non funziona il segnale sul canale 10, ora bypassato
+  // *** quando funzionera'anche E1, sul canale 10
+  
+  //  uint32_t veto_mask = 0x0000;  //mask of veto channels
+   uint32_t veto_mask[3] = {ch3a|ch3b, 0x0000, 0x0000};  //mask of veto channels
+  
+  //uint32_t veto_mask = 0x0004;  //mask of veto channels, uso come veto il SiPm E2
+   
+  // 0000 0100 0000 0000
+  // 0	  4	   0	0	
+  /* for time calibration studies
+  // uint32_t enabled_channels = 0x0010; //mask of enabled channels.  This mask also determines the channels used in the coincidence
+  // uint32_t veto_mask = 0x0000;  //mask of veto channels
+  */
+
+  //keep a minimum of about 58,75ns (5 DAC) delay to give time to the electronics to shape the signals
+  //  range [45ns:750ns] in 2.75ns steps
+ 
+  float tdelay[nch]      =  {
+			     78.0 + 10*2.75,	//77.5
+			     67.0 + 10*2.75, 
+  			     80.0 + 10*2.75,
+			     80.0 + 10*2.75,
+			     90.0 + 10*2.75 - 45, //	<--
+			     80.0 + 10*2.75 - 45 //
+                             };//canali efficienza [ns]
+  // CONFIGURIAMO NOI!!
+
+ /* float tdelay[nch]      =  {
+			     140.0 + 10*2.75,	//77.5
+			     140.0 + 10*2.75, 
+  			     140.0 + 10*2.75,
+			     140.0 + 10*2.75,
+			     20    + 10*2.75,	
+			     40    + 10*2.75
+                             };//canali efficienza [ns] 
+*/
+
+  //  range [10ns:1173ns] in 4.56ns steps
+  
+   //original vaule  
+   // float adcwidth=15;          //78.5ns
+   //float adcwidth=50;          //240ns 
+   // float adcwidth=50;          //240ns
+    //float adcwidth =15.33; 	  // 80ns
+   //float adcwidth =32.89; 	  //160ns
+  // float adcwidth =68.01;	  //320ns
+   //float adcwidth =138.255;	  //640ns
+  // float adcwidth =279.74;	  //1280ns
+   //float adcwidth=15; 
+  // float adcwidth=6.5; 
+  //float adcwidth=30; //120ns
+      
+  //float vetowidth=25; //206ns
+  //float vetowidth=33;	//valore
+  //float vetowidth=80; //340 ns
+  //float vetowidth=50;
+  //float vetowidth=100;
+  //float vetowidth =140; //370ns  
+  float adcwidth = 10+5;
+  float vetowidth =30+5;
+  
+  float width[nch]       =  {
+  				 10.1 + adcwidth *4.56,
+				 10.1 + adcwidth *4.56,
+  				 10.1 + adcwidth *4.56,
+  				 10.1 + adcwidth *4.56,
+  				 10.1 + vetowidth*4.56,
+				 10.1 + vetowidth*4.56}; // [ns] 
+  int32_t       JHandle;
+  CVErrorCodes  cvret;
+  printf ("programming trigger board\n");
+  
+  /* 
+     BOARD INITIALIZATION
+  */
+  CVBoardTypes  VMEBoard = cvV2718;	
+  int LinkNum = 0;
+  int ConetNode = 0;
+  cvret = CAENVME_Init(VMEBoard, LinkNum, ConetNode, &JHandle);
+  if(  cvret != cvSuccess ) 
+    {
+      printf("\n\n Error opening the device\n");
+      printf("arguments:vmeboard %d, link %d, device %d, handle %d\n",VMEBoard, LinkNum, ConetNode, JHandle);	
+      printf("error %d\n",cvret);
+      exit(1);
+    }
+
+  /* 
+     VME ADDRESSING MODE CONFIGURATION 
+  */
+  //  uint32_t jdiscbaseaddr = 0x00800000; 
+  uint32_t jdiscbaseaddr = 0x00600000; 
+  uint32_t jdiscregister = 0x0;
+  uint32_t vmeaddr       = jdiscbaseaddr; 
+  uint32_t jdiscdata     = 0x0i;
+  CVDataWidth dtsize = cvD32 ;
+  ushort am = cvA24_U_DATA ;            
+    
+
+  /*
+    THRESHOLD SETTING
+  */
+  printf("\n");
+  int ich;
+  for (ich=0;ich<nch;ich++){
+    /* 
+       THRESHOLD CONFGURATION 
+    */
+
+    printf ("configuring channel %d\n",channel[ich]);
+    uint16_t channel_mem_offset=4*(channel[ich]-1);
+    //set the threshold address
+    jdiscregister = 0x1000;
+    jdiscregister += channel_mem_offset; 
+    //compute the threshold
+    //    jdiscdata=521.3+0.607*jthreshold[ich];
+    // new calibration
+    jdiscdata=514.02+0.340*jthreshold[ich];
+    //write
+    printf("writing in register 0x%x\n",jdiscregister);
+    printf("setting the jthreshold to %f mV, %d DAC, 0x%x \n",jthreshold[ich],jdiscdata,jdiscdata);
+    vmeaddr=jdiscbaseaddr + jdiscregister;
+    cvret = CAENVME_WriteCycle(JHandle,vmeaddr,&jdiscdata,am,dtsize);
+    //check
+    caenvmecheck(cvret);
+
+    /*
+      SIGNAL DELAY CONFIGURATION
+    */
+    printf("\n");
+
+    //set the signal delay
+    jdiscregister=0x3000; 
+    uint32_t DACdelay = tdelay[ich]/2.75 - 16.4;//1 DAC step = 2.75ns, max 8 bits
+    jdiscdata = ((channel[ich]-1) <<8)|DACdelay;
+    //write
+    printf("writing in register 0x%x\n",jdiscregister);
+    printf("setting the signal delay to %f ns, DAC %d, hex 0x%x \n",tdelay[ich],DACdelay,jdiscdata);
+    vmeaddr = jdiscbaseaddr + jdiscregister;
+    cvret = CAENVME_WriteCycle(JHandle,vmeaddr,&jdiscdata,am,dtsize);
+    //check
+    caenvmecheck(cvret);
+    usleep(10);//wait 1ms to allow the board to write the delay register
+    /*
+      SIGNAL DURATION CONFIGURATION
+    */
+    printf("\n");
+
+    //set the signal duration
+    jdiscregister=0x4000; 
+    uint32_t DACwidth = (width[ich]/4.56 -2.2);//1 DAC step = 4.56ns, max 8 bits
+    jdiscdata = ((channel[ich]-1) <<8)|DACwidth;
+    //write
+    printf("writing in register 0x%x\n",jdiscregister);
+    printf("setting the width to %f ns, DAC %d, mask to 0x%x \n",width[ich],DACwidth,jdiscdata);
+
+    
+    vmeaddr = jdiscbaseaddr + jdiscregister;
+    cvret = CAENVME_WriteCycle(JHandle,vmeaddr,&jdiscdata,am,dtsize);
+    //check
+    caenvmecheck(cvret);
+}
+    /*
+      SIGNAL POLARITY CONFIGURATION
+    */
+    printf("\n\n");
+    
+    //set the trigger polarity address
+    jdiscregister = 0x2000;
+    //set the trigger polarity mask
+    uint32_t tr_polarity_mask = 0XFFFF; //0 = trigger on positive polarity,  1 = trigger on negative polarity, SET TO 1 THE BITS CORRESPONDING TO THE CHANNELS NOT CONNECTED
+/*
+  for (ich=0;ich<nch;ich++){
+    tr_polarity_mask = tr_polarity_mask & ~(1<<(channel[ich]-1)); //fix the polarity of our channels negative
+  }*/
+  for (ich=0;ich<nch;ich++){
+	if (polarity[ich]==positive) tr_polarity_mask = tr_polarity_mask & ~(1<<(channel[ich]-1) );
+}	
+    jdiscdata=tr_polarity_mask;
+    //write
+    printf("writing in register 0x%x\n",jdiscregister);
+    printf("setting the polarity mask to 0x%x \n",jdiscdata);
+    vmeaddr = jdiscbaseaddr + jdiscregister;
+    cvret = CAENVME_WriteCycle(JHandle,vmeaddr,&jdiscdata,am,dtsize);
+    //check
+    caenvmecheck(cvret);
+    jdiscdata=0;
+    cvret = CAENVME_ReadCycle(JHandle,vmeaddr,&jdiscdata,am,dtsize);
+    caenvmereadcheck(cvret,vmeaddr,jdiscdata);
+
+
+  /*
+    TRIGGER CONFIGURATION
+  */
+  printf("\n");
+
+  // global trigger generation
+  //enable mask: enable channels
+  int trigger_offset[3]={0x4,0x8,0xc};// 0x4=TR1, 0x8=TR2, 0xc=TR3
+  int itrig;
+  for (itrig=0; itrig<3; itrig++){			
+  // *** registri minterm per i vari trigger (5004,5008,500c)
+    jdiscregister=0x5000+trigger_offset[itrig]; 
+    uint32_t mask_channel=0xffff & ~(enabled_channels[itrig]);	// *** esegue l'AND bit a bit
+    
+  // ***  std::cout<<"Prova \t itrig : " << itrig << " \t, canali abilitati: " << enabled_channels[itrig] << "\n" ;
+    printf(" \n \nProva \t itrig:  %d\t, canali abilitati: 0x%x\t",itrig ,enabled_channels[itrig]);   
+    
+    uint32_t trigger_enable_mask = mask_channel;
+    jdiscdata = trigger_enable_mask;
+    //write
+    printf("writing in register 0x%x\n",jdiscregister);
+    printf("setting the channel mask to 0x%x \n",jdiscdata);
+    vmeaddr = jdiscbaseaddr + jdiscregister;
+    cvret = CAENVME_WriteCycle(JHandle,vmeaddr,&jdiscdata,am,dtsize);
+    //check
+    caenvmecheck(cvret);
+    cvret = CAENVME_ReadCycle(JHandle,vmeaddr,&jdiscdata,am,dtsize);
+    printf( "check jdiscdata: read in 0x%x value 0x%x\n",vmeaddr,jdiscdata);
+    caenvmereadcheck(cvret,vmeaddr,jdiscdata);
+  }
+
+  /*
+    VETO CONFIGURATION
+  */
+ 
+  printf("\n");
+
+  // veto generation
+  // enable channels
+  int veto_offset[3]={0x14,0x18,0x1c};// 0x14=VETO1, 0x18=VETO2, 0x1C=VETO3
+  for (itrig=0; itrig<3; itrig++){			
+    jdiscregister=0x5000+veto_offset[itrig];
+
+    uint32_t veto_channel=veto_mask[itrig];
+    jdiscdata = veto_channel;
+
+    // write
+    printf("writing in register 0x%x\n",jdiscregister);
+    printf("setting for trigger %d the channel veto mask to 0x%x \n",itrig,jdiscdata);
+    vmeaddr = jdiscbaseaddr + jdiscregister;
+    cvret = CAENVME_WriteCycle(JHandle,vmeaddr,&jdiscdata,am,dtsize);
+
+    // check
+    caenvmecheck(cvret);
+    cvret = CAENVME_ReadCycle(JHandle,vmeaddr,&jdiscdata,am,dtsize);
+    printf( "check jdiscdata: read in 0x%x value 0x%x\n",vmeaddr,jdiscdata);
+    caenvmereadcheck(cvret,vmeaddr,jdiscdata); 
+  }
+  
+  // close the device
+  CAENVME_End(JHandle);
+
+
+  return 0;
+}

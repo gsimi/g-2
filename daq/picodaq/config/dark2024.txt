@@ -1,0 +1,28 @@
+#CANALE A
+y # attiva canale A
+ d # DC coupling
+ 4 # range 4 = 100mV
+ n # nessun offset
+ y # imposto il trigger
+  f # falling edge
+  -7  # soglia trigger a mV
+
+# CANALE B
+n # canale B non attivo
+
+
+# SETTING ACQUISITION PROPERTIES FOR RAPID BLOCK MODE
+y # usa il default per #segmenti=1024 e #forme onda=100
+n # non imposto la timebase automaticamente
+ 1 # Time per sample (ns)=(timebase-2)*8 1->2ns, 2-> 4ns, 3->8ns 4->16ns, 5->24ns, 6,  
+ y # conferma
+ n # usa i valori di default per nsamples/div e pre-post trigger
+  100 # n -> Samples per DIV
+  10000 # n -> PreTriggers
+  10000 # n -> PostTrigger
+  y # conferma
+
+# SETTING DURATION OF ACQUISITION
+120 # acquisition time in seconds
+10 # max number of waveforms to acquire
+

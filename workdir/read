@@ -1,2 +1,4 @@
 #!/bin/bash
-ssh root@10.42.0.10  cat  /sys/devices/soc0/tc_measuretime@0/measure > measure ; wc measure
+ssh root@10.42.0.10  cat  /sys/devices/soc0/tc_measuretime@0/measure > measure ; 
+wc measure
+awk 'START{sum=0; sumsq=0; n=0}{val=$1; sum=sum+val; sumsq=sumsq+val*val;  n=n+1;}END{if (n!=0) {mean=sum/n; print "sumsq=",sumsq; print " sum = ",sum; rms = sqrt(sumsq/n-sum*sum/n/n) ; print "mean = ",mean, " +/- ",rms/sqrt(n)  ; print "rms = ",rms;}}' measure
