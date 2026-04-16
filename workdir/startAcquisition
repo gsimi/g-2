@@ -1,0 +1,22 @@
+ssh root@10.42.0.10  cat  /sys/devices/soc0/tc_measuretime@0/measure > /dev/null
+
+basedir=$(dirname $0)
+j=1;
+while (true); do 
+      $basedir/getAriettaData $1; 
+      rm /home/lhcb/.xsession-errors ;
+      touch /home/lhcb/.xsession-errors ;
+      sleep 30; #1800 mezzora
+       echo ok
+       echo 1 >> cont.txt
+       #git add .
+       #git commit -m "pusho dati"
+       #git push origin master
+ 
+done;
+#for j in $(seq 13)
+#do
+#	$basedir/getAriettaData $1
+#	echo $j
+#	usleep 100000
+#done
