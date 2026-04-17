@@ -10,6 +10,11 @@
 #include <TGraphErrors.h>
 #include <TStyle.h>
 
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include "TH1.h"
+#include "TH1D.h"
 
 #include <stdint.h>
 //typedef  char int8_t;
@@ -25,8 +30,8 @@
 #include "TH1F.h"
 #include "TCanvas.h"
 
-#include "../src/InfoAcq.cc"
-#include "../src/Event.cc"
+#include "src/InfoAcq.cc"
+#include "src/Event.cc"
 
 
 float adc_to_mv(int16_t raw, int16_t rangeIndex, int16_t maxADCValue)
@@ -48,7 +53,9 @@ float adc_to_mv(int16_t raw, int16_t rangeIndex, int16_t maxADCValue)
 	return (raw * inputRanges[rangeIndex])*1. / maxADCValue;
 }
 
-TH1F* HISTO(const char *fileName, bool negative,int nbin, int ch)
+enum channel {chaA, chB};
+
+TH1F* HISTO(const char *fileName, bool negative,int nbin, channel ch)
 {
 
 	// dichiaro le struct
@@ -340,7 +347,6 @@ float offset,  eOffset, gain,  eGain;
 //	gSystem->Load("ReadTree_C.so");
 //	gROOT->ProcessLineSync(".L ReadTree.C+");
 	ReadTree(filename.c_str(), true);
-
 	TSpectrum t;
 	TH1F* hMax = (TH1F*)gDirectory->FindObject("hMax");
 	hMax->GetXaxis()->SetTitle("Pulse Height[mV] ");
@@ -488,7 +494,7 @@ float offset,  eOffset, gain,  eGain;
 
 	if (nPeaks <= 1) return 1;
 	//FitFunction* ff = new FitFunction(nPeaks);
-	double xmax = hMax->GetXaxis()->GetXmax();
+	double xmax = gemini->GetXaxis()->GetXmax();
 	double xmin = hMax->GetXaxis()->GetXmin() + (xmax - hMax->GetXaxis()->GetXmin())/90.0;
 
 	//TF1* f = new TF1("fitFun", ff, xmin, xmax, nPeaks + 4, "ff"); 
@@ -801,17 +807,99 @@ void DarkCount(const char *fileName, bool negative=0)
 	cerr<<" #Samples: "<<sampSet.samplesStoredPerEvent<<endl;
 	cerr<<" Timestamp: "<<sampSet.timeIntervalNanoseconds<<" ns"<<endl;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
+//    double PeakA[sampSet.samplesStoredPerEvent];
+    double PeakA[1000000];
+    int PeakN = sampSet.samplesStoredPerEvent;
+    int PeakM = 10 ;
+    int Peaks;
+    int PeakMax = 0 ;
+    int PeakThr = 4 ; // fraction of Max-Min for threshold 
 	for (Long64_t index=0; index<nEvt; index++) 
 	{
 		treeEvt->GetEntry(index);
 		for (int ii=0; ii<sampSet.samplesStoredPerEvent; ii++)
 		{
 			float value =  adc_to_mv(sample[ii],chSet1.range,sampSet.max_adc_value);
-			if (value > maximum) maximum = value ;
-			if (value < minimum) minimum = value ;
+			PeakA[ii] = value ;
+			if (negative) PeakA[ii] = -PeakA[ii] ;
+            //printf("A: %f\n", PeakA[ii]);
+			if (value > maximum) { maximum = value ;}
+			if (value < minimum) { minimum = value ;}
+			
 		}
+        PeakMax = maximum - minimum ;
+        //printf("PeakMax: %f\n", PeakMax);
+
 		spectrumMaximum->Fill(negative?minimum-maximum:maximum-minimum);
 		maximum = 0.0;
 		minimum = 0.0;
+
+        Peaks = count_peaks(PeakA, PeakN, PeakM, PeakMax, PeakThr);
+        printf("Numero di picchi: %d\n", Peaks);
+
 	}
+}
+
+int count_peaks(const double *A, int n, int m, double Am, double Th) {
+    int count = 0;
+
+    for (int i = 0; i < n; i++) {
+        int left = i - m;
+        int right = i + m;
+
+        if (left < 0) left = 0;
+        if (right >= n) right = n - 1;
+
+        // 1) Controllo che A[i] sia il massimo locale nella finestra [left, right]
+        int is_local_max = 1;
+        for (int j = left; j <= right; j++) {
+            if (A[j] > A[i]) {
+                is_local_max = 0;
+                break;
+            }
+        }
+
+        if (!is_local_max) {
+            continue;
+        }
+
+        // 2) Trovo il massimo fuori dalla finestra [left, right]
+        double max_outside = -1e300;
+        int found_outside = 0;
+
+        for (int j = 0; j < left; j++) {
+            if (!found_outside || A[j] > max_outside) {
+                max_outside = A[j];
+                found_outside = 1;
+            }
+        }
+
+        for (int j = right + 1; j < n; j++) {
+            if (!found_outside || A[j] > max_outside) {
+                max_outside = A[j];
+                found_outside = 1;
+            }
+        }
+
+        // Se non esistono punti fuori finestra, non conto il picco
+        if (!found_outside) {
+            continue;
+        }
+
+        // 3) Verifica della soglia del 10%
+        //if (A[i] > 0.9 * max_outside) { count++; }
+
+        // 3) Verifica della soglia del Massimo dei picchi / 4        
+        if (A[i] > Am / Th ) count++;
+ 
+    }
+
+//    if (count > 2) {
+//       printf("picchi %d\n",count);
+//       for (int i = 0; i < n; i++) {
+//          printf("A: %f\n", A[i]);
+//       }
+//    }
+
+    return count;
 }
